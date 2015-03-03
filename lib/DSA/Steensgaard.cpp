@@ -17,7 +17,6 @@
 #include "dsa/DSGraph.h"
 
 #include "dsa/Steensgaard.hh"
-#include "ufo/Stats.hh"
 
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Debug.h"
@@ -42,7 +41,6 @@ void SteensgaardDataStructures::print(llvm::raw_ostream &O, const Module *M) con
 ///
 bool SteensgaardDataStructures::runOnModule(Module &M) 
 {
-  ufo::ScopedStats _st ("DSA");
   DS = &getAnalysis<StdLibDataStructures>();
   init (&getAnalysis<DataLayout>());
   return runOnModuleInternal(M);
