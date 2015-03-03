@@ -11,12 +11,12 @@
 // DSGraphs.
 //
 //===----------------------------------------------------------------------===//
-
+#define DEBUG_TYPE "dsnequiv"
 #include "assistDS/DSNodeEquivs.h"
 
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Support/InstIterator.h"
+#include "llvm/IR/InstIterator.h"
 #include "llvm/ADT/SmallSet.h"
 
 #include <deque>
@@ -247,7 +247,7 @@ const DSNode *DSNodeEquivs::getMemberForValue(const Value *V) {
 
     // BEGIN BANDAGE: caught a bug here after upgrade to OSX Mavericks
     // ORIGINAL: WL.insert(WL.end(), V->use_begin(), V->use_end());
-    for ( llvm::Value::const_use_iterator i = V->use_begin(); i != V->use_end(); ++i )
+    for ( llvm::Value::const_user_iterator i = V->user_begin(); i != V->user_end(); ++i )
       WL.push_back(*i);
     // END BANDAGE
 
@@ -255,7 +255,7 @@ const DSNode *DSNodeEquivs::getMemberForValue(const Value *V) {
       const User *TheUser = WL.front();
       WL.pop_front();
 
-      if (!Visited.insert(TheUser))
+      if (!Visited.insert(TheUser).second)
         continue;
 
       //
@@ -276,7 +276,7 @@ const DSNode *DSNodeEquivs::getMemberForValue(const Value *V) {
         //
         // If this use is of some other nature, look at the users of this use.
         //
-        WL.insert(WL.end(), TheUser->use_begin(), TheUser->use_end());
+        WL.insert(WL.end(), TheUser->user_begin(), TheUser->user_end());
       }
     } while (!WL.empty());
   }

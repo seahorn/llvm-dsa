@@ -42,7 +42,7 @@ void SteensgaardDataStructures::print(llvm::raw_ostream &O, const Module *M) con
 bool SteensgaardDataStructures::runOnModule(Module &M) 
 {
   DS = &getAnalysis<StdLibDataStructures>();
-  init (&getAnalysis<DataLayout>());
+  init (&getAnalysis<DataLayoutPass>().getDataLayout ());
   return runOnModuleInternal(M);
 }
 
