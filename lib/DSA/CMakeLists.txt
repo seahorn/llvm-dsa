@@ -1,4 +1,4 @@
-add_llvm_library (DSA
+add_library (DSA STATIC
   AddressTakenAnalysis.cpp
   CallTargets.cpp
   DSTest.cpp
@@ -22,4 +22,3 @@ add_llvm_library (DSA
   Steensgaard.cpp
 )
 
-add_definitions(-fPIC)

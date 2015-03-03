@@ -1,4 +1,4 @@
-add_llvm_library (AssistDS
+add_library (AssistDS STATIC
   ArgCast.cpp
   Devirt.cpp
   GEPExprArgs.cpp
@@ -20,5 +20,3 @@ add_llvm_library (AssistDS
   FuncSpec.cpp
   SVADevirt.cpp
   SimplifyLoad.cpp)
-
-add_definitions(-fPIC)
