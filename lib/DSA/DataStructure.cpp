@@ -274,12 +274,29 @@ bool DSNode::isNodeCompletelyFolded() const {
 void DSNode::addValueList(std::vector<const Value*> &List) const {
   DSScalarMap &SN = getParentGraph()->getScalarMap();
   for(DSScalarMap::const_iterator I = SN.begin(), E = SN.end(); I!= E; I++) {
-    if(SN[I->first].getNode() == this){
-      //I->first->dump();
-    }
-
+    if (I->second.getNode () == this) List.push_back (I->first);
   }
 }
+
+/// Returns unique scalar pointing to this node, or nullptr if no
+/// unique scalar exists.
+const Value* DSNode::getUniqueScalar () const 
+{
+  const Value *v = nullptr;
+  
+  DSScalarMap &SN = getParentGraph()->getScalarMap();
+  for (auto &kv : SN)
+    if (kv.second.getNode () == this) 
+    {
+      // -- another value maps to current node
+      if (v) return nullptr;
+      v = kv.first;
+    }
+    
+  return v;
+}
+
+
 /// addFullGlobalsSet - Compute the full set of global values that are
 /// represented by this node.  Unlike getGlobalsList(), this requires fair
 /// amount of work to compute, so don't treat this method call as free.

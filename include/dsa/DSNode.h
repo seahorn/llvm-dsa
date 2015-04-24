@@ -352,6 +352,10 @@ public:
   /// this node. High overhead method.
   void addValueList(std::vector<const Value*> &List) const;
 
+  /// Returns unique scalar pointing to this node, or nullptr if no
+  /// unique scalar exists.
+  const Value* getUniqueScalar () const ;
+
   /// maskNodeTypes - Apply a mask to the node types bitfield.
   ///
   void maskNodeTypes(unsigned Mask) {
