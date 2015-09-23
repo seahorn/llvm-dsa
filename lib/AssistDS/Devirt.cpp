@@ -29,7 +29,7 @@ STATISTIC(CSConvert, "Number of call sites converted");
 
 // Pass registration
 RegisterPass<Devirtualize>
-X ("devirt", "Devirtualize indirect function calls");
+XX ("devirt", "Devirtualize indirect function calls");
 
 //
 // Function: getVoidPtrType()
@@ -266,7 +266,7 @@ Devirtualize::buildBounce (CallSite CS, std::vector<const Function*>& Targets) {
   //
   //InsertPt->setUnconditionalDest (tailBB);
   InsertPt->setSuccessor(0, tailBB);
-  InsertPt->setSuccessor(1, tailBB);
+  //InsertPt->setSuccessor(1, tailBB);
   //
   // Return the newly created bounce function.
   //
@@ -320,12 +320,18 @@ Devirtualize::makeDirectCall (CallSite & CS) {
     // Replace the original call with a call to the bounce function.
     //
     if (CallInst* CI = dyn_cast<CallInst>(CS.getInstruction())) {
-      std::vector<Value*> Params (CI->op_begin(), CI->op_end());
+      // The last operand in the op list is the callee
+      // std::vector<Value*> Params (CI->op_begin(), CI->op_end());
+      std::vector<Value*> Params;
+      Params.reserve (std::distance (CI->op_begin(), CI->op_end()));
+      Params.push_back (*(CI->op_end () - 1));
+      Params.insert (Params.end (), CI->op_begin(), (CI->op_end() - 1));
       std::string name = CI->hasName() ? CI->getName().str() + ".dv" : "";
       CallInst* CN = CallInst::Create (const_cast<Function*>(NF),
                                        Params,
                                        name,
                                        CI);
+
       CI->replaceAllUsesWith(CN);
       CI->eraseFromParent();
     } else if (InvokeInst* CI = dyn_cast<InvokeInst>(CS.getInstruction())) {
