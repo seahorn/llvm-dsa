@@ -20,3 +20,5 @@ add_library (AssistDS STATIC
   FuncSpec.cpp
   SVADevirt.cpp
   SimplifyLoad.cpp)
+
+target_link_libraries (AssistDS DSA)
