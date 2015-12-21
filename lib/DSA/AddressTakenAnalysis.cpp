@@ -86,3 +86,6 @@ void AddressTakenAnalysis::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
 
 char AddressTakenAnalysis::ID;
 static RegisterPass<AddressTakenAnalysis> A("ata", "Identify Address Taken Functions");
+
+// Publicly exposed interface to pass...
+char &llvm::AddressTakenAnalysisID = AddressTakenAnalysis::ID;

@@ -50,6 +50,7 @@ namespace llvm {
     }
   };
 
+extern char &AllocIdentifyID;  
 }
 
 #endif	/* _ALLOCATORIDENTIFICATION_H */

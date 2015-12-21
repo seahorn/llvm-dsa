@@ -1438,6 +1438,9 @@ void handleMagicSections(DSGraph* GlobalsGraph, Module& M) {
 }
 
 char LocalDataStructures::ID;
+// Publicly exposed interface to pass...
+char &llvm::LocalDataStructuresID = LocalDataStructures::ID;
+
 
 bool LocalDataStructures::runOnModule(Module &M) {
   init(&getAnalysis<DataLayoutPass>().getDataLayout ());

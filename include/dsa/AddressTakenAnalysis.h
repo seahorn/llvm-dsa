@@ -41,6 +41,8 @@ public:
 
 };
 
+extern char &AddressTakenAnalysisID;  
+
 }
 
 #endif	/* _ADDRESSTAKENANALYSIS_H */

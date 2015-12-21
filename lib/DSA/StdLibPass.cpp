@@ -37,6 +37,9 @@ STATISTIC(NumNodesFoldedInStdLib,    "Number of nodes folded in std lib");
 
 char StdLibDataStructures::ID;
 
+// Publicly exposed interface to pass...
+char &llvm::StdLibDataStructuresID = StdLibDataStructures::ID;
+
 #define numOps 10
 namespace {
   static cl::opt<bool> noStdLibFold("dsa-stdlib-no-fold",

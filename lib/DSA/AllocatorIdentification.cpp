@@ -194,5 +194,10 @@ void AllocIdentify::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 char AllocIdentify::ID = 0;
+
+// Publicly exposed interface to pass...
+char &llvm::AllocIdentifyID = AllocIdentify::ID;
+
+
 static RegisterPass<AllocIdentify>
 X("alloc-identify", "Identify allocator wrapper functions");

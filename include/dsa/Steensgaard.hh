@@ -47,7 +47,8 @@ namespace llvm
 
     void print(llvm::raw_ostream &O, const Module *M) const;
   };
-  
+
+  extern char &SteensgaardDataStructuresID;  
 }
 
 

@@ -194,6 +194,8 @@ public:
   }
 };
 
+extern char &LocalDataStructuresID;
+
 // StdLibDataStructures - This analysis recognizes common standard c library
 // functions and generates graphs for them.
 class StdLibDataStructures : public DataStructures {
@@ -216,6 +218,8 @@ public:
     AU.setPreservesAll();
   }
 };
+
+extern char &StdLibDataStructuresID;
 
 /// BUDataStructures - The analysis that computes the interprocedurally closed
 /// data structure graphs for all of the functions in the program.  This pass

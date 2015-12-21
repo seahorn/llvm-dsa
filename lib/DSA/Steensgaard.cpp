@@ -183,6 +183,9 @@ SteensgaardDataStructures::ResolveFunctionCall(const Function *F,
 
 char SteensgaardDataStructures::ID = 0;
 
+// Publicly exposed interface to pass...
+char &llvm::SteensgaardDataStructuresID = SteensgaardDataStructures::ID;
+
 // Register the pass...
 static RegisterPass<SteensgaardDataStructures> X
 ("dsa-steens",
