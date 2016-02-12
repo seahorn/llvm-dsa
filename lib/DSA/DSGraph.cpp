@@ -539,7 +539,7 @@ DSCallSite DSGraph::getCallSiteForArguments(const Function &F) const {
 DSCallSite DSGraph::getDSCallSiteForCallSite(CallSite CS) const {
   DSNodeHandle RetVal, VarArg;
   Instruction *I = CS.getInstruction();
-  if (shouldHaveNodeForValue(I) && hasNodeForValue (I))
+  if (shouldHaveNodeForValue(I))
     RetVal = getNodeForValue(I);
 
   //FIXME: Here we trust the signature of the callsite to determine which arguments
@@ -560,8 +560,14 @@ DSCallSite DSGraph::getDSCallSiteForCallSite(CallSite CS) const {
   for (CallSite::arg_iterator I = CS.arg_begin(), E = CS.arg_end(); I != E; ++I)
     if (isa<PointerType>((*I)->getType())) {
       DSNodeHandle ArgNode; // Initially empty
-      if (shouldHaveNodeForValue(*I) && hasNodeForValue (*I)) 
-        ArgNode = getNodeForValue(*I);
+      if (shouldHaveNodeForValue(*I))
+      {
+        assert (hasNodeForValue (*I) ||
+                GlobalsGraph && GlobalsGraph->hasNodeForValue (*I));
+        ArgNode = hasNodeForValue (*I) ?
+          getNodeForValue (*I) : GlobalsGraph->getNodeForValue (*I);
+      }
+      
       if (I - CS.arg_begin() < NumFixedArgs) {
         Args.push_back(ArgNode);
       } else {
