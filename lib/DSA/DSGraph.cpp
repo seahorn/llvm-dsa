@@ -562,10 +562,8 @@ DSCallSite DSGraph::getDSCallSiteForCallSite(CallSite CS) const {
       DSNodeHandle ArgNode; // Initially empty
       if (shouldHaveNodeForValue(*I))
       {
-        assert (hasNodeForValue (*I) ||
-                GlobalsGraph && GlobalsGraph->hasNodeForValue (*I));
-        ArgNode = hasNodeForValue (*I) ?
-          getNodeForValue (*I) : GlobalsGraph->getNodeForValue (*I);
+        assert (hasNodeForValue (*I));
+        ArgNode = getNodeForValue (*I);
       }
       
       if (I - CS.arg_begin() < NumFixedArgs) {

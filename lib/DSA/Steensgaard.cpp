@@ -145,7 +145,7 @@ bool SteensgaardDataStructures::runOnModuleInternal (Module &M)
                         DSGraph::DontCloneAuxCallNodes);
   for (DSScalarMap::global_iterator I = GlobalsGraph->getScalarMap().global_begin(),
          E = GlobalsGraph->getScalarMap().global_end(); I != E; ++I)
-    if (isa<GlobalVariable>(*I))
+    if (isa<GlobalVariable>(*I) || isa<Function> (*I))
       RC.getClonedNH(GlobalsGraph->getNodeForValue(*I));
    
   //ResultGraph->writeGraphToFile (errs (), "Module.st");
