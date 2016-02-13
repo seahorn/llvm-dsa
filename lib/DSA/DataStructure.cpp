@@ -1181,7 +1181,6 @@ void DSNode::remapLinks(DSGraph::NodeMapTy &OldNodeMap) {
 /// to the set, which allows it to only traverse visited nodes once.
 ///
 void DSNode::markReachableNodes(DenseSet<const DSNode*> &ReachableNodes) const {
-  if (this == 0) return;
   assert(!isForwarding() && "Cannot mark a forwarded node!");
   if (ReachableNodes.insert(this).second) // Is newly reachable?
     for (DSNode::const_edge_iterator I = edge_begin(), E = edge_end();
@@ -1190,8 +1189,10 @@ void DSNode::markReachableNodes(DenseSet<const DSNode*> &ReachableNodes) const {
 }
 
 void DSCallSite::markReachableNodes(DenseSet<const DSNode*> &Nodes) const {
-  getRetVal().getNode()->markReachableNodes(Nodes);
-  getVAVal().getNode()->markReachableNodes(Nodes);
+  if (getRetVal ().getNode ())
+    getRetVal().getNode()->markReachableNodes(Nodes);
+  if (getVAVal ().getNode ())
+    getVAVal().getNode()->markReachableNodes(Nodes);
   if (isIndirectCall()) getCalleeNode()->markReachableNodes(Nodes);
 
   for (unsigned i = 0, e = getNumPtrArgs(); i != e; ++i)
