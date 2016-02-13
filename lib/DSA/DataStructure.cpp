@@ -129,7 +129,7 @@ void DSScalarMap::spliceFrom(DSScalarMap &RHS) {
 //===----------------------------------------------------------------------===//
 
 DSNode::DSNode(DSGraph *G)
-  : NumReferrers(0), Size(0), ParentGraph(G), NodeType(0) {
+  : NumReferrers(0), Size(0), ParentGraph(G), NodeType(0), m_scalar(0) {
     // Add the type entry if it is specified...
     if (G) G->addNode(this);
     ++NumNodeAllocated;
@@ -138,7 +138,7 @@ DSNode::DSNode(DSGraph *G)
 // DSNode copy constructor... do not copy over the referrers list!
 DSNode::DSNode(const DSNode &N, DSGraph *G, bool NullLinks)
   : NumReferrers(0), Size(N.Size), ParentGraph(G), TyMap(N.TyMap),
-  Globals(N.Globals), NodeType(N.NodeType) {
+    Globals(N.Globals), NodeType(N.NodeType), m_scalar(N.m_scalar) {
     if (!NullLinks) Links = N.Links;
     G->addNode(this);
     ++NumNodeAllocated;
@@ -280,8 +280,10 @@ void DSNode::addValueList(std::vector<const Value*> &List) const {
 
 /// Returns unique scalar pointing to this node, or nullptr if no
 /// unique scalar exists.
-const Value* DSNode::getUniqueScalar () const 
+const Value* DSNode::getUniqueScalar () const
 {
+  if (m_scalar) return (const Value*) ((unsigned long)(m_scalar) & ~01);
+  
   const Value *v = nullptr;
   
   DSScalarMap &SN = getParentGraph()->getScalarMap();
@@ -289,10 +291,15 @@ const Value* DSNode::getUniqueScalar () const
     if (kv.second.getNode () == this) 
     {
       // -- another value maps to current node
-      if (v) return nullptr;
+      if (v) { v = nullptr; break; }
       v = kv.first;
     }
     
+  m_scalar = v;
+  
+  // -- mark it cached
+  m_scalar = (const Value*) ((unsigned long)m_scalar | 01);
+  
   return v;
 }
 

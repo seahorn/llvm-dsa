@@ -85,6 +85,9 @@ private:
   ///
   svset<const GlobalValue*> Globals;
 
+  /// A unique scalar this node correspond to (if one exists)
+  mutable const Value *m_scalar;
+  
   void operator=(const DSNode &); // DO NOT IMPLEMENT
   DSNode(const DSNode &);         // DO NOT IMPLEMENT
 public:
