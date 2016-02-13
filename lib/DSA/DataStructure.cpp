@@ -1203,7 +1203,8 @@ void DSCallSite::markReachableNodes(DenseSet<const DSNode*> &Nodes) const {
   if (isIndirectCall()) getCalleeNode()->markReachableNodes(Nodes);
 
   for (unsigned i = 0, e = getNumPtrArgs(); i != e; ++i)
-    getPtrArg(i).getNode()->markReachableNodes(Nodes);
+    if (getPtrArg(i).getNode())
+      getPtrArg(i).getNode()->markReachableNodes(Nodes);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
