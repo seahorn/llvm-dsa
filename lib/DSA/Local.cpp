@@ -560,7 +560,7 @@ void GraphBuilder::visitVAArgInst(VAArgInst &I) {
 }
 
 void GraphBuilder::visitIntToPtrInst(IntToPtrInst &I) {
-  DSNode *N = createNode();
+  /*  DSNode *N = createNode();
   if(I.hasOneUse()) {
     if(isa<ICmpInst>(*(I.use_begin()))) {
       NumBoringIntToPtr++;
@@ -570,7 +570,17 @@ void GraphBuilder::visitIntToPtrInst(IntToPtrInst &I) {
     N->setIntToPtrMarker();
     N->setUnknownMarker();
   }
-  setDestTo(I, N); 
+  setDestTo(I, N); */
+  
+  if (I.hasOneUse () && isa<ICmpInst> (*(I.use_begin ())))
+  {
+    NumBoringIntToPtr++;
+    return;
+  }
+  DSNode *N = createNode ();
+  N->setIntToPtrMarker ();
+  N->setUnknownMarker ();
+  setDestTo (I, N);
 }
 
 void GraphBuilder::visitPtrToIntInst(PtrToIntInst& I) {
