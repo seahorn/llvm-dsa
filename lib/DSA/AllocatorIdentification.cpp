@@ -93,12 +93,32 @@ AllocIdentify::~AllocIdentify() {}
 
 bool AllocIdentify::runOnModule(Module& M) {
 
+  // C
   allocators.insert("malloc");
   allocators.insert("calloc");
   //allocators.insert("realloc");
   //allocators.insert("memset");
+  // C++
+  allocators.insert ("Znwj");  // new(unsigned int)
+  allocators.insert ("ZnwjRKSt9nothrow_t"); // new(unsigned int, nothrow)
+  allocators.insert ("Znwm"); // new(unsigned long)
+  allocators.insert ("ZnwmRKSt9nothrow_t"); // new(unsigned long, nothrow)
+  allocators.insert ("Znaj"); // new[](unsigned int)
+  allocators.insert ("ZnajRKSt9nothrow_t"); // new[](unsigned int, nothrow)
+  allocators.insert ("Znam"); // new[](unsigned long)
+  allocators.insert ("ZnamRKSt9nothrow_t"); // new[](unsigned long, nothrow)
+  // C
   deallocators.insert("free");
   deallocators.insert("cfree");
+  // C++
+  deallocators.insert("ZdlPv"); // operator delete(void*)
+  deallocators.insert("ZdaPv"); // operator delete[](void*) 
+  deallocators.insert("ZdlPvj"); // delete(void*, uint)
+  deallocators.insert("ZdlPvm"); // delete(void*, ulong)
+  deallocators.insert("ZdlPvRKSt9nothrow_t"); // delete(void*, nothrow)
+  deallocators.insert("ZdaPvj"); // delete[](void*, uint)
+  deallocators.insert("ZdaPvm"); // delete[](void*, ulong)
+  deallocators.insert("ZdaPvRKSt9nothrow_t"); // delete[](void*, nothrow)
 
   bool changed;
   do {
