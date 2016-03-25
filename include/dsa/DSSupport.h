@@ -136,6 +136,7 @@ public:
 private:
   DSNode *HandleForwarding() const;
 
+public:
   /// isForwarding - Return true if this NodeHandle is forwarding to another
   /// one.
   bool isForwarding() const;
