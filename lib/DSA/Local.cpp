@@ -844,6 +844,7 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
             NodeH.getNode()->foldNodeCompletely();
             NodeH.getNode();
             Offset = 0;
+            break;
           }
         }
 
