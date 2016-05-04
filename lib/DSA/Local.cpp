@@ -819,12 +819,14 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
       //
       // Some LLVM transforms lower structure indexing into byte-level
       // indexing.  Try to recognize forms of that here.
+      // E.g., p->f = x; 
+      // can be transformed into 
+      //       (*type of f) ((char*) p + offset of f) = x; 
       //
       Type * Int8Type  = Type::getInt8Ty(CurTy->getContext());
       ConstantInt * IS = dyn_cast<ConstantInt>(I.getOperand());
       if (IS &&
           (NodeH.getOffset() == 0) &&
-          (!(NodeH.getNode()->isArrayNode())) &&
           (CurTy == Int8Type)) {
         // Calculate the offset of the field
         Offset += IS->getSExtValue() * TD.getTypeAllocSize (Int8Type);
@@ -833,8 +835,16 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         // Grow the DSNode size as needed.
         //
         unsigned requiredSize = Offset + TD.getTypeAllocSize (Int8Type);
-        if (NodeH.getNode()->getSize() <= requiredSize){
-          NodeH.getNode()->growSize (requiredSize);
+        if (NodeH.getNode()->getSize() < requiredSize){
+          if (!(NodeH.getNode()->isArrayNode())) {
+            NodeH.getNode()->growSize (requiredSize);
+          } else {
+            assert (NodeH.getNode()->getSize() > 0);
+
+            NodeH.getNode()->foldNodeCompletely();
+            NodeH.getNode();
+            Offset = 0;
+          }
         }
 
         // Add in the offset calculated...
