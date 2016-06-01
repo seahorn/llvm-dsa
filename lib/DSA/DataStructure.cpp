@@ -35,6 +35,10 @@
 #include <algorithm>
 using namespace llvm;
 
+#define EXPLAIN_MERGING
+
+
+//#define EXPLAIN_CLONE_DH
 #define COLLAPSE_ARRAYS_AGGRESSIVELY 0
 namespace {
   STATISTIC (NumFolds, "Number of nodes completely folded");
@@ -118,8 +122,19 @@ void DSScalarMap::spliceFrom(DSScalarMap &RHS) {
   } else {
     GlobalSet.insert(RHS.GlobalSet.begin(), RHS.GlobalSet.end());
     for (ValueMapTy::iterator I = RHS.ValueMap.begin(), E = RHS.ValueMap.end();
-         I != E; ++I)
+         I != E; ++I) {
+      #ifdef EXPLAIN_CLONE_DH
+      if (ValueMap[I->first].getNode() && I->second.getNode()) {
+        errs () << "Splice " << *(I->first) << "\n";
+        ValueMap[I->first].getNode()->dump();
+        I->second.getNode()->dump();
+      } else if (I->second.getNode()) {
+        errs () << "Splice " << *(I->first) << "\n";
+        I->second.getNode()->dump();
+      }
+      #endif
       ValueMap[I->first].mergeWith(I->second);
+    }
     RHS.ValueMap.clear();
   }
 }
@@ -477,6 +492,13 @@ void DSNode::mergeTypeInfo(Type *NewTy, unsigned Offset) {
     TyMap[Offset] = getParentGraph()->getTypeSS().getOrCreate(TyMap[Offset], NewTy);
   }
 
+#ifdef EXPLAIN_MERGING
+  if (TyMap[Offset]->size() > 1) {
+    errs () << "Merging to a non-singleton set 1 ";
+    this->dump();
+  }
+#endif
+
   assert(TyMap[Offset]);
 }
 
@@ -497,6 +519,13 @@ void DSNode::mergeTypeInfo(const TyMapTy::mapped_type TyIt, unsigned Offset) {
     S.insert(TyIt->begin(), TyIt->end());
     TyMap[Offset] = getParentGraph()->getTypeSS().getOrCreate(S);
   }
+
+#ifdef EXPLAIN_MERGING
+  if (TyMap[Offset]->size() > 1) {
+    errs () << "Merging to a non-singleton set 2 ";
+    this->dump();
+  }
+#endif 
   assert(TyMap[Offset]);
 }
 
@@ -781,6 +810,14 @@ DSNodeHandle ReachabilityCloner::getClonedNH(const DSNodeHandle &SrcNH) {
     if (NHN) {
       NHN->checkOffsetFoldIfNeeded(NewOffset);
       NHN = NH.getNode();
+      #ifdef EXPLAIN_CLONE_DH
+      if (NHN->isNodeCompletelyFolded ()) {
+        errs () << "\tNode " << NHN
+                << " (ref=" << NHN->getNumReferrers() << ") "
+                << " has been folded.\n";
+      }
+      #endif 
+
     }
     return DSNodeHandle(NHN, NewOffset);
   }

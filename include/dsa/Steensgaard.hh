@@ -23,12 +23,7 @@ namespace llvm
     virtual bool runOnModule(Module &M);
     virtual void releaseMemory();
 
-    virtual void getAnalysisUsage(AnalysisUsage &AU) const 
-    {
-      AU.addRequired<DataLayoutPass>();
-      AU.addRequired<StdLibDataStructures>();
-      AU.setPreservesAll();
-    }
+    virtual void getAnalysisUsage(AnalysisUsage &AU) const ;
   
     /// getDSGraph - Return the data structure graph for the specified function.
     ///

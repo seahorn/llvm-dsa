@@ -64,6 +64,119 @@ cl::opt<bool> TypeInferenceOptimize("enable-type-inference-opts",
                                     cl::Hidden,
                                     cl::init(false));
 
+// Here to see when nodes are collapsed
+#define DSA_LOCAL_DEBUG
+#define EXPLAIN_GEP
+
+#ifdef DSA_LOCAL_DEBUG
+namespace local_debug {
+
+  std::string type_to_str (DSNode *nn) {
+
+    std::string type_str;
+    llvm::raw_string_ostream rso(type_str);
+
+    if (!nn)  {
+      // do nothing
+    } else if (nn->isNodeCompletelyFolded())  {
+      rso << "  Types={collapsed";
+    } else if (nn->hasNoType ())  {
+      rso << "  Types={void";
+    } else {
+      rso << "  Types={";
+      DSNode::type_iterator ii = nn->type_begin(), ie = nn->type_end();
+      DSNode::type_iterator jj = ii;
+      if (++jj == ie) {
+        auto ty_set_ptr = ii->second;
+        if (ty_set_ptr->size () == 1) {
+          rso <<  **(ty_set_ptr->begin ());
+        } else {
+          svset<Type*>::const_iterator ki = (*ty_set_ptr).begin (), ke = (*ty_set_ptr).end ();
+          rso << "[";
+          for (; ki != ke; ) { 
+            rso << **ki;
+            ++ki;
+            if (ki != ke) rso << " | ";
+          }
+          rso << "]";
+        }
+      }
+      else {
+        rso << "struct {";
+        while (ii != ie) {
+          rso << ii->first << ":";
+          if (!ii->second) { 
+            rso << "untyped";
+          } else {
+            auto ty_set_ptr = ii->second;
+            if (ty_set_ptr->size () == 1) {
+              rso << **(ty_set_ptr->begin ());
+            } else {
+              svset<Type*>::const_iterator ki = ty_set_ptr->begin (), ke = ty_set_ptr->end ();
+              rso << "[";
+              for (; ki != ke; ) { 
+                rso << **ki;
+                ++ki;
+                if (ki != ke) rso << " | ";
+              }
+              rso << "]";
+            }
+          }
+          ++ii;
+          if (ii != ie)
+            rso << ",";   
+        }
+        rso << "}*";
+      }
+    }
+    rso << "}\n";
+    return rso.str();
+  }
+
+  // if < 0 then the  node has no type
+  // if > 0  then return the number of types
+  int getNumTypes (DSNode *nn) {
+    if (!nn)  {
+      return 0;
+    } else {
+      // FIXME: this is not actually a good measure of the number of
+      // types
+      return std::distance(nn->type_begin(), nn->type_end());
+    }
+  }
+
+  bool equalTypes (DSNode *N1 , DSNode *N2) {
+    return (type_to_str(N1) == type_to_str(N2));
+  }
+
+  bool compareDSGraph(DSGraph* G1, DSGraph* G2, Value* Use) {
+    DSScalarMap& SM1 = G1->getScalarMap ();
+    DSScalarMap& SM2 = G2->getScalarMap ();
+    for (typename DSScalarMap::iterator it = SM1.begin (), et = SM1.end (); it!=et;++it){
+      DSNodeHandle DH1 = it->second; 
+      DSNodeHandle DH2 = SM2 [it->first];
+      if (!DH1.isForwarding ()) {
+        DSNode* NN1 = DH1.getNode ();
+        DSNode* NN2 = DH2.getNode ();
+        if ( NN1 && NN2 && (!NN1->hasNoType ()) && (NN2->hasNoType ())) {
+          errs () << "\t--- Node became untyped \n";
+          NN1->dump (); 
+          NN2->dump (); 
+          return false;
+        }
+        else if (!equalTypes(NN1,NN2)) {
+          errs () << "\t--- Node changed its types\n";
+          NN1->dump (); 
+          NN2->dump (); 
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}
+#endif 
+
 namespace {
   //===--------------------------------------------------------------------===//
   //  GraphBuilder Class
@@ -365,9 +478,22 @@ void GraphBuilder::setDestTo(Value &V, const DSNodeHandle &NH) {
 void GraphBuilder::visitPHINode(PHINode &PN) {
   if (!isa<PointerType>(PN.getType())) return; // Only pointer PHIs
 
+  // #ifdef DSA_LOCAL_DEBUG
+  // errs () << PN << "\n";
+  // #endif 
   DSNodeHandle &PNDest = G.getNodeForValue(&PN);
-  for (unsigned i = 0, e = PN.getNumIncomingValues(); i != e; ++i)
+  for (unsigned i = 0, e = PN.getNumIncomingValues(); i != e; ++i) {
+      // #ifdef DSA_LOCAL_DEBUG
+      // DSNodeHandle PHINode = getValueDest(PN.getIncomingValue(i));
+      // errs () << "\t MERGING " << PHINode.getNode() << "\n";      
+      // #endif 
     PNDest.mergeWith(getValueDest(PN.getIncomingValue(i)));
+  }
+  // #ifdef DSA_LOCAL_DEBUG
+  // errs () << "\t RESULT "; PNDest.getNode()->dump(); 
+  // errs () << "\t (refs=" << PNDest.getNode()->getNumReferrers() << ") "
+  //         << " (Size=" << PNDest.getNode()->getSize() << " Offset=" << PNDest.getOffset() << ")\n";
+  // #endif 
 }
 
 void GraphBuilder::visitSelectInst(SelectInst &SI) {
@@ -407,7 +533,16 @@ void GraphBuilder::visitLoadInst(LoadInst &LI) {
         ++NumIgnoredInst;
         return;
       }
+
   Ptr.getNode()->mergeTypeInfo(LI.getType(), Ptr.getOffset());
+
+  #ifdef DSA_LOCAL_DEBUG
+  errs () << LI << "\n";
+  // errs () << "\t RESULT "; Ptr.getNode()->dump(); 
+  // errs () << "\t (refs=" << Ptr.getNode()->getNumReferrers() << ") "
+  //         << " (Size=" << Ptr.getNode()->getSize() << " Offset=" << Ptr.getOffset() << ")\n";
+  #endif 
+
 }
 
 void GraphBuilder::visitStoreInst(StoreInst &SI) {
@@ -431,7 +566,16 @@ void GraphBuilder::visitStoreInst(StoreInst &SI) {
         ++NumIgnoredInst;
         return;
       }
+
   Dest.getNode()->mergeTypeInfo(StoredTy, Dest.getOffset());
+
+  #ifdef DSA_LOCAL_DEBUG
+  errs () << SI << "\n";
+  // errs () << "\t RESULT "; Dest.getNode()->dump(); 
+  // errs () << "\t (refs=" << Dest.getNode()->getNumReferrers() << ") "
+  //         << " (Size=" << Dest.getNode()->getSize() << " Offset=" << Dest.getOffset() << ")\n";
+  #endif 
+
 }
 
 void GraphBuilder::visitAtomicCmpXchgInst(AtomicCmpXchgInst &I) {
@@ -693,6 +837,12 @@ void GraphBuilder::visitExtractValueInst(ExtractValueInst& I) {
 }
 
 void GraphBuilder::visitGetElementPtrInst(User &GEP) {
+#ifdef DSA_LOCAL_DEBUG
+  errs () << "Begin " << GEP << "\n";
+  EquivalenceClasses<const GlobalValue*> ECs = G.getGlobalECs ();
+  SuperSet<Type*> tss = G.getTypeSS ();
+  DSGraph G_old (&G, ECs, tss);
+#endif 
   //
   // Ensure that the indexed pointer has a DSNode.
   //
@@ -700,6 +850,9 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
   if (NodeH.isNull())
     NodeH = createNode();
 
+  #ifdef EXPLAIN_GEP
+  //errs () << "Num of types before GEP = " << local_debug::getNumTypes(NodeH.getNode()) <<"\n";
+  #endif 
   //
   // There are a few quick and easy cases to handle.  If  the DSNode of the 
   // indexed pointer is already folded, then we know that the result of the 
@@ -710,6 +863,12 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
   if (!NodeH.isNull() &&
       NodeH.getNode()->isNodeCompletelyFolded()) {
     setDestTo(GEP, NodeH);
+    #ifdef EXPLAIN_GEP
+    errs () << "Node "; NodeH.getNode()->dump();
+    errs () << " (refs=" << NodeH.getNode()->getNumReferrers()  << ") already folded\n";
+            
+    errs () << "END ----------- \n";
+    #endif 
     return;
   }
 
@@ -739,10 +898,21 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
   //        conservative type-folding.
   //
   for (gep_type_iterator I = gep_type_begin(GEP), E = gep_type_end(GEP);
-       I != E; ++I)
+       I != E; ++I) {
+
+    #ifdef EXPLAIN_GEP
+    errs () << "\tCurrent type=" << **I << "\n";
+    #endif 
+
     if (StructType *STy = dyn_cast<StructType>(*I)) {
       // indexing into a structure
       // next index must be a constant
+
+      #ifdef EXPLAIN_GEP
+      errs ()<< "\tIndexing into a structure " << *STy;
+      errs () << " (Size=" << NodeH.getNode()->getSize() << " Offset=" << NodeH.getOffset() << ")\n";
+      #endif 
+
       const ConstantInt* CUI = cast<ConstantInt>(I.getOperand());
       int FieldNo = CUI->getSExtValue();
       // increment the offset by the actual byte offset being accessed
@@ -787,6 +957,12 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
       // indexing into an array.
       NodeH.getNode()->setArrayMarker();
       Type *CurTy = ATy->getElementType();
+      #ifdef EXPLAIN_GEP
+      errs ()<< "\tIndexing into an array type ";
+      errs () << "(Size=" << NodeH.getNode()->getSize() << " Offset=" << NodeH.getOffset() << ")\n";
+      errs ()<< "\tArray type element " << *CurTy << "\n";
+      #endif 
+
 
       //
       // Ensure that the DSNode's size is large enough to contain one
@@ -807,6 +983,20 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
       if((NodeH.getOffset() || Offset != 0)
          || (!isa<ArrayType>(CurTy)
              && (NodeH.getNode()->getSize() != TD.getTypeAllocSize(CurTy)))) {
+
+        #ifdef EXPLAIN_GEP
+        NodeH.getNode()->dump ();
+        if (NodeH.getOffset())
+          errs() << "\t\tFolding node in " << GEP << "\n"
+                 << "\t\tDSNode represents a pointer into the object at a non-zero offset\n";
+        else if (Offset !=0)
+          errs() << "\t\tFolding node in " << GEP << "\n"
+                 << "\t\t The offset of the pointer is already non-zero\n";
+        else 
+          errs() << "\t\tFolding node in " << GEP << "\n"
+                 << "\t\tThe size of the array element does not match the size into which the pointer indexing is indexing:" << TD.getTypeAllocSize(CurTy) << " != " << NodeH.getNode()->getSize() << "\n";        
+        #endif 
+
         NodeH.getNode()->foldNodeCompletely();
         NodeH.getNode();
         Offset = 0;
@@ -815,6 +1005,11 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
     } else if (const PointerType *PtrTy = dyn_cast<PointerType>(*I)) {
       // Get the type pointed to by the pointer
       Type *CurTy = PtrTy->getElementType();
+
+      #ifdef EXPLAIN_GEP
+      errs ()<< "\tIndexing into a pointer type ";
+      errs () << "(Size=" << NodeH.getNode()->getSize() << " Offset=" << NodeH.getOffset() << ")\n";
+      #endif 
 
       //
       // Some LLVM transforms lower structure indexing into byte-level
@@ -836,11 +1031,16 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         //
         unsigned requiredSize = Offset + TD.getTypeAllocSize (Int8Type);
         if (NodeH.getNode()->getSize() < requiredSize){
-          if (!(NodeH.getNode()->isArrayNode())) {
+          if (!(NodeH.getNode()->isArrayNode()))
             NodeH.getNode()->growSize (requiredSize);
-          } else {
+          else {
             assert (NodeH.getNode()->getSize() > 0);
-
+            // we cannot grow an array so we fold completely the node ...
+            #ifdef EXPLAIN_GEP
+            errs () << "\tNode " << NodeH.getNode() 
+                    << " (ref=" << NodeH.getNode()->getNumReferrers() << ") "
+                    << " has been folded (byte-level indexing)\n";
+            #endif 
             NodeH.getNode()->foldNodeCompletely();
             NodeH.getNode();
             Offset = 0;
@@ -857,6 +1057,21 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
 
         // NodeH is now the pointer we want to GEP to be...
         setDestTo(GEP, NodeH);
+
+        #ifdef EXPLAIN_GEP
+        if (N->isNodeCompletelyFolded ()) {
+          errs () << "\tNode " << N 
+                  << " (ref=" << N->getNumReferrers() << ") "
+                  << " has been folded (byte-level indexing)\n";
+        } else{
+          errs () << "\tNode " << N << " is NOT folded (byte-level indexing) "
+                  << " (ref=" << N->getNumReferrers()  << ") " 
+                  << "(Size=" << N->getSize() << " Offset=" << NodeH.getOffset() << ")\n";
+        }
+        //errs () << "\tNum of types after GEP = " << local_debug::getNumTypes(N) <<"\n";
+        errs () << "END ----------- \n";
+        #endif 
+
         return;
       }
 
@@ -902,6 +1117,20 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         if (NodeH.getOffset() || Offset != 0 ||
             (!isa<ArrayType>(CurTy) &&
              (NodeH.getNode()->getSize() != TD.getTypeAllocSize(CurTy)))) {
+
+          #ifdef EXPLAIN_GEP
+          if (NodeH.getOffset())
+            errs() << "\t\tFolding node " << NodeH.getNode() <<  " in " << GEP << "\n"
+                   << "\t\tDSNode represents a pointer into the object at a non-zero offset\n";
+          else if (Offset !=0)
+            errs() << "\t\tFolding node " << NodeH.getNode() <<  " in " << GEP << "\n"
+                   << "\t\tThe offset of the pointer is already non-zero\n";
+          else 
+            errs() << "\t\tFolding node " << NodeH.getNode() <<  " in " << GEP << "\n"
+                   << "\t\tThe size of the array element does not match the size into which the pointer indexing is indexing:" 
+                   << TD.getTypeAllocSize(CurTy) << " != " << NodeH.getNode()->getSize() << "\n";
+          #endif
+
           NodeH.getNode()->foldNodeCompletely();
           NodeH.getNode();
           Offset = 0;
@@ -909,20 +1138,60 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         }
       }
     }
-
+  }
   // Add in the offset calculated...
   NodeH.setOffset(NodeH.getOffset()+Offset);
 
   // Check the offset
   DSNode *N = NodeH.getNode();
   if (N) N->checkOffsetFoldIfNeeded(NodeH.getOffset());
+  
+  #ifdef EXPLAIN_GEP
+  if (N->isNodeCompletelyFolded ()) {
+    errs () << "\tNode " << N 
+            << " (ref=" << N->getNumReferrers() << ") "
+            << " has been folded\n";
+  } else{
+    errs () << "\tNode " << N << " is NOT folded "
+            << " (ref=" << N->getNumReferrers() << ") "
+            << "(Size=" << N->getSize() << " Offset=" << NodeH.getOffset() << ")\n";
+  }
+  //errs () << "Num of types after GEP = " << local_debug::getNumTypes(N) <<"\n";
+  #endif 
+
+
+  // if (N) {
+  //    errs () << "DSNode of the GEP base ";
+  //    N->dump ();
+  // }
+  // errs () << "Offset calculated=" << NodeH.getOffset() << "\n";
+  // DSNodeHandle& DHV = G.getNodeForValue(&GEP);
+  // DSNode *NN = DHV.getNode ();
+  //   if (NN) {
+  //         errs () << "DSNode of the GEP ";
+  //         NN->dump ();
+  //       } else 
+  //     errs () << "No DSNode yet for GEP\n";
+    
 
   // NodeH is now the pointer we want to GEP to be...
   setDestTo(GEP, NodeH);
+
+#ifdef DSA_LOCAL_DEBUG
+  local_debug::compareDSGraph (&G_old, &G, &GEP);
+  errs () << "END ----------- \n";
+
+#endif 
 }
 
 
 void GraphBuilder::visitCallInst(CallInst &CI) {
+  #ifdef DSA_LOCAL_DEBUG
+  if (CI.getCalledFunction() && 
+      (CI.getCalledFunction()->getIntrinsicID() == Intrinsic::memcpy ||
+       CI.getCalledFunction()->getIntrinsicID() == Intrinsic::memmove))
+    errs () << CI << "\n";
+  #endif 
   visitCallSite(&CI);
 }
 
@@ -959,6 +1228,7 @@ void GraphBuilder::visitVAStartNode(DSNode* N) {
   // calls to va_start will populate their argument with the same data.
   if (!VAArray) VAArray = createNode();
   VAArray->setArrayMarker();
+  DEBUG(errs() << "[dsa:local] folding node in VAA\n");
   VAArray->foldNodeCompletely();
   VAArray->setLink(0,VANH);
 
@@ -1046,6 +1316,7 @@ bool GraphBuilder::visitIntrinsic(CallSite CS, Function *F) {
   case Intrinsic::stacksave: {
     DSNode * Node = createNode();
     Node->setAllocaMarker()->setIncompleteMarker()->setUnknownMarker();
+    DEBUG(errs() << "[dsa:local] folding node in stacksave\n");
     Node->foldNodeCompletely();
     setDestTo (*(CS.getInstruction()), Node);
     return true;
@@ -1055,6 +1326,7 @@ bool GraphBuilder::visitIntrinsic(CallSite CS, Function *F) {
       ->setIncompleteMarker()
       ->setUnknownMarker()
       ->foldNodeCompletely();
+    DEBUG(errs() << "[dsa:local] folding node in stackrestore\n");
     return true;
   case Intrinsic::vaend:
     // TODO: What to do here?
@@ -1064,9 +1336,21 @@ bool GraphBuilder::visitIntrinsic(CallSite CS, Function *F) {
     // Merge the first & second arguments, and mark the memory read and
     // modified.
     DSNodeHandle RetNH = getValueDest(CS.getArgument(0));
+
+    #ifdef DSA_LOCAL_DEBUG
+    auto LHS = RetNH;
+    auto RHS = getValueDest(CS.getArgument(1));
+    errs () << "MEMCPY: \n";
+    LHS.getNode()->dump(); 
+    RHS.getNode()->dump();
+    #endif 
     RetNH.mergeWith(getValueDest(CS.getArgument(1)));
     if (DSNode *N = RetNH.getNode())
       N->setModifiedMarker()->setReadMarker();
+    #ifdef DSA_LOCAL_DEBUG
+    errs () << "RESULT: "; LHS.getNode()->dump();
+    #endif 
+
     return true;
   }
   case Intrinsic::memset:
@@ -1252,11 +1536,17 @@ void GraphBuilder::visitInstruction(Instruction &Inst) {
   if (isa<PointerType>(Inst.getType()))
     CurNode = getValueDest(&Inst);
   for (User::op_iterator I = Inst.op_begin(), E = Inst.op_end(); I != E; ++I)
-    if (isa<PointerType>((*I)->getType()))
+    if (isa<PointerType>((*I)->getType())) {
+      #ifdef DSA_LOCAL_DEBUG
+      DSNodeHandle OpNode = getValueDest(*I);
+      errs () << "Unknown instruction " << Inst << " merging " << OpNode.getNode() << "\n";      
+      #endif 
       CurNode.mergeWith(getValueDest(*I));
+    }
 
   if (DSNode *N = CurNode.getNode())
     N->setUnknownMarker();
+
 }
 
 
@@ -1504,6 +1794,10 @@ bool LocalDataStructures::runOnModule(Module &M) {
   // Calculate all of the graphs...
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     if (!I->isDeclaration()) {
+      #ifdef DSA_LOCAL_DEBUG
+      errs () << "=========================================================\n";
+      errs () << "Local pass on " << I->getName () << "\n";
+      #endif 
       DSGraph* G = new DSGraph(GlobalECs, getDataLayout(), *TypeSS, GlobalsGraph);
       GraphBuilder GGB(*I, *G, *this);
       G->getAuxFunctionCalls() = G->getFunctionCalls();
@@ -1519,6 +1813,22 @@ bool LocalDataStructures::runOnModule(Module &M) {
                        DSGraph::StripAllocaBit);
       formGlobalECs();
       DEBUG(G->AssertGraphOK());
+
+      #ifdef DSA_LOCAL_DEBUG
+      unsigned ArgIdx=0;
+      for (Function::const_arg_iterator AI = I->arg_begin(), AE = I->arg_end();
+           AI != AE; ++AI)  {
+         auto ValMap =  G->getScalarMap();
+         DSGraph::ScalarMapTy::iterator I = ValMap.find(AI);
+         if (I != ValMap.end()) {   // If its a pointer argument...
+         errs () << "FORMAL PARAM " << ArgIdx+1 << " ---- " << *AI << "\n"
+                 << I->second.getNode () 
+                 << " (refs=" << I->second.getNode ()->getNumReferrers() << ") "
+                 << local_debug::type_to_str (I->second.getNode ());
+         }
+         ArgIdx++;
+      }
+      #endif  
     }
 
   //GlobalsGraph->removeTriviallyDeadNodes();
@@ -1541,8 +1851,27 @@ bool LocalDataStructures::runOnModule(Module &M) {
                        DSGraph::DontCloneAuxCallNodes);
       Graph->markIncompleteNodes(DSGraph::MarkFormalArgs
                                  |DSGraph::IgnoreGlobals);
+
+      // #ifdef DSA_LOCAL_DEBUG
+      // unsigned ArgIdx=0;
+      // errs () << "===" << I->getName () << "\n";
+      // for (Function::const_arg_iterator AI = I->arg_begin(), AE = I->arg_end();
+      //      AI != AE; ++AI)  {
+      //    auto ValMap =  Graph->getScalarMap();
+      //    DSGraph::ScalarMapTy::iterator I = ValMap.find(AI);
+      //    if (I != ValMap.end()) {   // If its a pointer argument...
+      //    errs () << "FORMAL PARAM " << ArgIdx+1 << " ---- " << *AI << "\n"
+      //            << I->second.getNode () 
+      //            << " (refs=" << I->second.getNode ()->getNumReferrers() << ") "
+      //            << local_debug::type_to_str (I->second.getNode ());
+      //    }
+      //    ArgIdx++;
+      // }
+      // #endif  
+
     }
 
+  
   return false;
 }
 
