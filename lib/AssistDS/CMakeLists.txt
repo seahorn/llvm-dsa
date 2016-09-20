@@ -1,4 +1,4 @@
-add_library (AssistDS STATIC
+set (AssistDS_SOURCES
   ArgCast.cpp
   Devirt.cpp
   GEPExprArgs.cpp
@@ -21,4 +21,39 @@ add_library (AssistDS STATIC
   SVADevirt.cpp
   SimplifyLoad.cpp)
 
+if (TopLevel)
+   add_library (AssistDS SHARED ${AssistDS_SOURCES})
+else ()
+   add_library (AssistDS STATIC ${AssistDS_SOURCES})
+endif ()
+  
+# add_library (AssistDS STATIC
+#   ArgCast.cpp
+#   Devirt.cpp
+#   GEPExprArgs.cpp
+#   LoadArgs.cpp
+#   SimplifyExtractValue.cpp
+#   StructReturnToPointer.cpp
+#   ArgSimplify.cpp
+#   DynCount.cpp
+#   IndCloner.cpp
+#   SimplifyGEP.cpp
+#   TypeChecks.cpp
+#   DSNodeEquivs.cpp
+#   FuncSimplify.cpp
+#   Int2PtrCmp.cpp
+#   MergeGEP.cpp
+#   SimplifyInsertValue.cpp
+#   TypeChecksOpt.cpp
+#   DataStructureCallGraph.cpp
+#   FuncSpec.cpp
+#   SVADevirt.cpp
+#   SimplifyLoad.cpp)
+
 target_link_libraries (AssistDS DSA)
+
+if (TopLevel)
+  install(TARGETS AssistDS 
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib)
+endif () 

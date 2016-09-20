@@ -6,12 +6,18 @@ if (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR )
     "In-source builds are not allowed. Please clean your source tree and try again.")
 endif()
 
+# determine if this is top-level or embedded project
+if (PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  set (TopLevel TRUE)
+else()
+  set (TopLevel FALSE)
+endif()
+
 # Add path for custom modules
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # put static libraries first
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-
 
 find_package (LLVM 3.6.0 REQUIRED CONFIG NO_DEFAULT_PATH)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")

@@ -1,4 +1,4 @@
-add_library (DSA STATIC
+set (DSA_SOURCES
   AddressTakenAnalysis.cpp
   CallTargets.cpp
   DSTest.cpp
@@ -20,5 +20,39 @@ add_library (DSA STATIC
   Local.cpp
   SanityCheck.cpp
   Steensgaard.cpp
-)
+)  
+
+
+if (TopLevel)
+  add_library (DSA SHARED ${DSA_SOURCES})
+  install(TARGETS DSA
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib)
+else()
+  add_library (DSA STATIC ${DSA_SOURCES})
+endif()
+
+# add_library (DSA STATIC
+#   AddressTakenAnalysis.cpp
+#   CallTargets.cpp
+#   DSTest.cpp
+#   EquivClassGraphs.cpp
+#   StdLibPass.cpp
+#   AllocatorIdentification.cpp
+#   CompleteBottomUp.cpp
+#   DataStructure.cpp
+#   GraphChecker.cpp
+#   Printer.cpp
+#   TopDownClosure.cpp
+#   Basic.cpp
+#   DSCallGraph.cpp
+#   DataStructureStats.cpp
+#   TypeSafety.cpp
+#   BottomUpClosure.cpp
+#   DSGraph.cpp
+#   EntryPointAnalysis.cpp
+#   Local.cpp
+#   SanityCheck.cpp
+#   Steensgaard.cpp
+# )
 
