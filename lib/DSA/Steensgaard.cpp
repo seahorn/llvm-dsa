@@ -20,6 +20,7 @@
 
 #include "llvm/IR/Module.h"
 #include "llvm/Support/Debug.h"
+#include "dsa/Stats.hh"
 
 using namespace llvm;
 
@@ -41,9 +42,12 @@ void SteensgaardDataStructures::print(llvm::raw_ostream &O, const Module *M) con
 ///
 bool SteensgaardDataStructures::runOnModule(Module &M) 
 {
+  dsa::Stats::resume ("DsaAnalysis");
   DS = &getAnalysis<StdLibDataStructures>();
   init (&getAnalysis<DataLayoutPass>().getDataLayout ());
-  return runOnModuleInternal(M);
+  bool res=runOnModuleInternal(M);
+  dsa::Stats::stop ("DsaAnalysis");
+  return res;
 }
 
 bool SteensgaardDataStructures::runOnModuleInternal (Module &M) 

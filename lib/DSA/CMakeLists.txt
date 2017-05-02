@@ -20,5 +20,6 @@ add_library (DSA STATIC
   Local.cpp
   SanityCheck.cpp
   Steensgaard.cpp
+  Stats.cpp
 )
 
