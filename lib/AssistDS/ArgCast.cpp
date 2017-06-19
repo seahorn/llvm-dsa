@@ -63,7 +63,7 @@ bool ArgCast::runOnModule(Module& M) {
         continue;
       if (CE->getOpcode() != Instruction::BitCast)
         continue;
-      if(CE->getOperand(0) != I)
+      if(CE->getOperand(0) != &*I)
         continue;
       const PointerType *PTy = dyn_cast<PointerType>(CE->getType());
       if (!PTy)

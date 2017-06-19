@@ -156,12 +156,12 @@ namespace {
           // that we'd want to BU external information into (since those contexts are by definition
           // ones we don't have code for).  Shouldn't this just be set in TD?
 #if 0
-          DSNode * Node = getValueDest(I).getNode();
+          DSNode * Node = getValueDest(&*I).getNode();
 
           if (!f.hasInternalLinkage() || !f.hasPrivateLinkage())
             Node->setExternalMarker();
 #else
-          getValueDest(I).getNode();
+          getValueDest(&*I).getNode();
 #endif
 
         }
@@ -1430,11 +1430,11 @@ void handleMagicSections(DSGraph* GlobalsGraph, Module& M) {
       for (Module::iterator MI = M.begin(), ME = M.end();
            MI != ME; ++MI)
         if (MI->hasSection() && MI->getSection() == section)
-          inSection.insert(MI);
+          inSection.insert(&*MI);
       for (Module::global_iterator MI = M.global_begin(), ME = M.global_end();
            MI != ME; ++MI)
         if (MI->hasSection() && MI->getSection() == section)
-          inSection.insert(MI);
+          inSection.insert(&*MI);
 
       for (unsigned x = 0; x < count; ++x) {
         std::string global;
@@ -1464,7 +1464,7 @@ char &llvm::LocalDataStructuresID = LocalDataStructures::ID;
 
 
 bool LocalDataStructures::runOnModule(Module &M) {
-  init(&getAnalysis<DataLayoutPass>().getDataLayout ());
+  init(&M.getDataLayout ());
   addrAnalysis = &getAnalysis<AddressTakenAnalysis>();
 
   // First step, build the globals graph.
@@ -1474,16 +1474,16 @@ bool LocalDataStructures::runOnModule(Module &M) {
     // Add initializers for all of the globals to the globals graph.
     for (Module::global_iterator I = M.global_begin(), E = M.global_end();
          I != E; ++I)
-      if (!(I->hasSection() && I->getSection() == "llvm.metadata")) {
+      if (!(I->hasSection() && std::strcmp(I->getSection(),"llvm.metadata") == 0)) {
         if (I->isDeclaration())
-          GGB.mergeExternalGlobal(I);
+          GGB.mergeExternalGlobal(&*I);
         else
-          GGB.mergeInGlobalInitializer(I);
+          GGB.mergeInGlobalInitializer(&*I);
       }
     // Add Functions to the globals graph.
     for (Module::iterator FI = M.begin(), FE = M.end(); FI != FE; ++FI){
-      if(addrAnalysis->hasAddressTaken(FI)) {
-        GGB.mergeFunction(FI);
+      if(addrAnalysis->hasAddressTaken(&*FI)) {
+        GGB.mergeFunction(&*FI);
       }
     }
   }
@@ -1509,7 +1509,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
       G->getAuxFunctionCalls() = G->getFunctionCalls();
       setDSGraph(*I, G);
       propagateUnknownFlag(G);
-      callgraph.insureEntry(I);
+      callgraph.insureEntry(&*I);
       G->buildCallGraph(callgraph, GlobalFunctionList, true);
       G->maskIncompleteMarkers();
       G->markIncompleteNodes(DSGraph::MarkFormalArgs
@@ -1535,7 +1535,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
   propagateUnknownFlag(GlobalsGraph);
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     if (!I->isDeclaration()) {
-      DSGraph *Graph = getOrCreateGraph(I);
+      DSGraph *Graph = getOrCreateGraph(&*I);
       Graph->maskIncompleteMarkers();
       cloneGlobalsInto(Graph, DSGraph::DontCloneCallNodes |
                        DSGraph::DontCloneAuxCallNodes);

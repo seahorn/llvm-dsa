@@ -154,7 +154,7 @@ bool LoadArgs::runOnModule(Module& M) {
                 NI->setName("LDarg");
                 continue;
               }
-              ValueMap[II] = NI;
+              ValueMap[&*II] = &*NI;
               NI->setName(II->getName());
               NI->addAttr(F->getAttributes().getParamAttributes(II->getArgNo() + 1));
               ++II;
@@ -165,7 +165,7 @@ bool LoadArgs::runOnModule(Module& M) {
             std::vector<Value*> fargs;
             for(Function::arg_iterator ai = NewF->arg_begin(), 
                 ae= NewF->arg_end(); ai != ae; ++ai) {
-              fargs.push_back(ai);
+              fargs.push_back(&*ai);
             }
 
             NewF->setAttributes(NewF->getAttributes().addAttributes(
@@ -174,7 +174,7 @@ bool LoadArgs::runOnModule(Module& M) {
                 F->getContext(), ~0, F->getAttributes().getFnAttributes()));
             //Get the point to insert the GEP instr.
             Instruction *InsertPoint;
-            for (BasicBlock::iterator insrt = NewF->front().begin(); isa<AllocaInst>(InsertPoint = insrt); ++insrt) {;}
+            for (BasicBlock::iterator insrt = NewF->front().begin(); isa<AllocaInst>(InsertPoint = &*insrt); ++insrt) {;}
             LoadInst *LI_new = new LoadInst(fargs.at(argNum), "", InsertPoint);
             fargs.at(argNum+1)->replaceAllUsesWith(LI_new);
           }

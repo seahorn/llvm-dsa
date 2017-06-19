@@ -107,12 +107,12 @@ bool TDDataStructures::runOnModule(Module &M) {
   // Functions without internal linkage are definitely externally callable!
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     if (!I->isDeclaration() && !I->hasInternalLinkage() && !I->hasPrivateLinkage())
-      ExternallyCallable.insert(I);
+      ExternallyCallable.insert(&*I);
 
   // Debug code to print the functions that are externally callable
 #if 0
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
-    if (ExternallyCallable.count(I)) {
+    if (ExternallyCallable.count(&*I)) {
       errs() << "ExternallyCallable: " << I->getNameStr() << "\n";
     }
 #endif
@@ -163,7 +163,7 @@ bool TDDataStructures::runOnModule(Module &M) {
   VisitedGraph.clear();
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())){
-      DSGraph *Graph  = getOrCreateGraph(F);
+      DSGraph *Graph  = getOrCreateGraph(&*F);
       if (!VisitedGraph.insert(Graph).second) continue;
 
       cloneGlobalsInto(Graph, DSGraph::DontCloneCallNodes |

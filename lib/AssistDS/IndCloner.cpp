@@ -88,7 +88,7 @@ IndClone::runOnModule(Module& M) {
           // function call.
           //
           for (unsigned index = 1; index < ui->getNumOperands(); ++index) {
-            if (ui->getOperand(index)->stripPointerCasts() == I) {
+            if (ui->getOperand(index)->stripPointerCasts() == &*I) {
               pleaseCloneTheFunction = true;
               break;
             }
@@ -100,7 +100,7 @@ IndClone::runOnModule(Module& M) {
         // call site, schedule it for cloning.
         //
         if (pleaseCloneTheFunction) {
-          toClone.push_back(I);
+          toClone.push_back(&*I);
           break;
         }
       }

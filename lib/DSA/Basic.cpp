@@ -33,7 +33,7 @@ X("dsa-basic", "Basic Data Structure Analysis(No Analysis)");
 char BasicDataStructures::ID = 0;
 
 bool BasicDataStructures::runOnModule(Module &M) {
-  init(&getAnalysis<DataLayoutPass>().getDataLayout ());
+  init(&M.getDataLayout ());
 
   //
   // Create a void pointer type.  This is simply a pointer to an 8 bit value.
@@ -76,7 +76,7 @@ bool BasicDataStructures::runOnModule(Module &M) {
         }
       }
 
-      for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
+      for (inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I) {
         G->getNodeForValue(&*I).mergeWith(Node);
       }
 

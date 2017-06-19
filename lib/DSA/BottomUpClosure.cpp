@@ -65,7 +65,7 @@ bool BUDataStructures::runOnModuleInternal(Module& M) {
   //
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())){
-      getOrCreateGraph(F);
+      getOrCreateGraph(&*F);
     }
   }
 
@@ -101,7 +101,7 @@ bool BUDataStructures::runOnModuleInternal(Module& M) {
   //
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())){
-      DSGraph *Graph  = getOrCreateGraph(F);
+      DSGraph *Graph  = getOrCreateGraph(&*F);
       cloneGlobalsInto(Graph, DSGraph::DontCloneCallNodes |
                         DSGraph::DontCloneAuxCallNodes);
       Graph->buildCallGraph(callgraph, GlobalFunctionList, filterCallees);
@@ -116,7 +116,7 @@ bool BUDataStructures::runOnModuleInternal(Module& M) {
   // Once the correct flags have been calculated. Update the callgraph.
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())){
-      DSGraph *Graph = getOrCreateGraph(F);
+      DSGraph *Graph = getOrCreateGraph(&*F);
       Graph->buildCompleteCallGraph(callgraph,
                                     GlobalFunctionList, filterCallees);
     }
@@ -307,11 +307,11 @@ BUDataStructures::postOrderInline (Module & M) {
   // Calculate the graphs for any functions that are unreachable from main...
   //
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
-    if (!I->isDeclaration() && !ValMap.count(I)) {
+    if (!I->isDeclaration() && !ValMap.count(&*I)) {
       if (MainFunc)
         DEBUG(errs() << debugname << ": Function unreachable from main: "
         << I->getName() << "\n");
-      calculateGraphs(I, Stack, NextID, ValMap);     // Calculate all graphs.
+      calculateGraphs(&*I, Stack, NextID, ValMap);     // Calculate all graphs.
       CloneAuxIntoGlobal(getDSGraph(*I));
 
       // Mark this graph as processed.  Do this by finding all functions

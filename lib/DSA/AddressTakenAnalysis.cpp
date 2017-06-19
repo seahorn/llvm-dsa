@@ -69,8 +69,8 @@ static bool isAddressTaken(Value* V) {
 
 bool AddressTakenAnalysis::runOnModule(llvm::Module& M) {
   for (Module::iterator FI = M.begin(), FE = M.end(); FI != FE; ++FI){
-    if(isAddressTaken(FI)) {
-      addressTakenFunctions.insert(FI);
+    if(isAddressTaken(&*FI)) {
+      addressTakenFunctions.insert(&*FI);
     }
   }
 

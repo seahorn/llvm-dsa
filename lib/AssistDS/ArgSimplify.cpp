@@ -88,7 +88,7 @@ namespace {
                           std::vector<Value*> fargs;
                           for(Function::arg_iterator ai = NewF->arg_begin(), 
                               ae= NewF->arg_end(); ai != ae; ++ai) {
-                            fargs.push_back(ai);
+                            fargs.push_back(&*ai);
                             ai->setName("arg");
                           }
                           Value *CastedVal;
@@ -110,7 +110,7 @@ namespace {
                             if(ai->getArgNo() == arg_count)
                               Args.push_back(CastedVal);
                             else 
-                              Args.push_back(ai);
+                              Args.push_back(&*ai);
                           }
 
                           CallInst * CallI = CallInst::Create(F,Args, 
@@ -161,7 +161,7 @@ namespace {
             // if this argument is only used in ICMP instructions, we can
             // replace it.
             if(change) {
-              simplify(I, ii->getArgNo(), ii->getType()); 
+              simplify(&*I, ii->getArgNo(), ii->getType()); 
             }
           }
         }

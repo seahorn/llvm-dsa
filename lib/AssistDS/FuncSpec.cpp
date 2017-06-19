@@ -73,7 +73,7 @@ bool FuncSpec::runOnModule(Module& M) {
           ui != ue; ++ui) {
         if (CallInst* CI = dyn_cast<CallInst>(*ui)) {
           // Check that it is the called value (and not an argument)
-          if(CI->getCalledValue()->stripPointerCasts() == I) {
+          if(CI->getCalledValue()->stripPointerCasts() == &*I) {
             std::vector<std::pair<unsigned, Constant*> > Consts;
             for (unsigned x = 0; x < FPArgs.size(); ++x)
               if (Constant* C = dyn_cast<Constant>(ui->getOperand(FPArgs.at(x) + 1))) {
@@ -85,7 +85,7 @@ bool FuncSpec::runOnModule(Module& M) {
               // If at least one of the arguments is a constant function,
               // we must clone the function.
               cloneSites[CI] = Consts;
-              toClone[std::make_pair(I, Consts)] = 0;
+              toClone[std::make_pair(&*I, Consts)] = 0;
             }
           }
         }

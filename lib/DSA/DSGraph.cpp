@@ -200,7 +200,7 @@ void DSGraph::cloneInto( DSGraph* G, unsigned CloneFlags) {
            "Forward nodes shouldn't be in node list!");
     DSNode *New = new DSNode(*I, this);
     New->maskNodeTypes(~BitsToClear);
-    OldNodeMap[I] = New;
+    OldNodeMap[&*I] = New;
   }
 
   // Rewrite the links in the new nodes to point into the current graph now.
@@ -298,7 +298,7 @@ void DSGraph::getFunctionArgumentsForCall(const Function *F,
   for (Function::const_arg_iterator AI = F->arg_begin(), E = F->arg_end();
        AI != E; ++AI)
     if (isa<PointerType>(AI->getType())) {
-      Args.push_back(getNodeForValue(AI));
+      Args.push_back(getNodeForValue(&*AI));
       assert(!Args.back().isNull() && "Pointer argument w/o scalarmap entry!?");
     }
 }
@@ -529,7 +529,7 @@ DSCallSite DSGraph::getCallSiteForArguments(const Function &F) const {
 
   for (Function::const_arg_iterator I = F.arg_begin(), E = F.arg_end(); I != E; ++I)
     if (isa<PointerType>(I->getType()))
-      Args.push_back(getNodeForValue(I));
+      Args.push_back(getNodeForValue(&*I));
 
   return DSCallSite(CallSite(), getReturnNodeFor(F), getVANodeFor(F), &F, Args);
 }
@@ -637,7 +637,7 @@ void DSGraph::markIncompleteNodes(unsigned Flags) {
       for (Function::const_arg_iterator I = F.arg_begin(), E = F.arg_end();
            I != E; ++I)
         if (isa<PointerType>(I->getType()))
-          markIncompleteNode(getNodeForValue(I).getNode());
+          markIncompleteNode(getNodeForValue(&*I).getNode());
       markIncompleteNode(FI->second.getNode());
     }
     // Mark all vanodes as incomplete (they are also arguments)
@@ -670,7 +670,7 @@ void DSGraph::markIncompleteNodes(unsigned Flags) {
   if (Flags & DSGraph::MarkVAStart) {
     for (node_iterator i=node_begin(); i != node_end(); ++i) {
       if (i->isVAStartNode())
-        markIncompleteNode(i);
+        markIncompleteNode(&*i);
     }
   }
 }
@@ -768,7 +768,7 @@ void DSGraph::computeExternalFlags(unsigned Flags) {
             continue;
         }
         if (isa<PointerType>(I->getType()))
-          markExternalNode(getNodeForValue(I).getNode(), processedNodes);
+          markExternalNode(getNodeForValue(&*I).getNode(), processedNodes);
       }
       markExternalNode(FI->second.getNode(), processedNodes);
       markExternalNode(getVANodeFor(F).getNode(), processedNodes);
@@ -1178,7 +1178,8 @@ void DSGraph::removeDeadNodes(unsigned Flags) {
   std::vector<DSNode*> DeadNodes;
   DeadNodes.reserve(Nodes.size());
   for (NodeListTy::iterator NI = Nodes.begin(), E = Nodes.end(); NI != E;) {
-    DSNode *N = NI++;
+    DSNode *N = &*NI;
+    NI++;
     assert(!N->isForwarding() && "Forwarded node in nodes list?");
 
     if (!Alive.count(N)) {

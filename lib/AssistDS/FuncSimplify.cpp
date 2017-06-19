@@ -50,7 +50,7 @@ bool FuncSimplify::runOnModule(Module& M) {
     if(!I->hasInternalLinkage())
       continue;
     I->replaceAllUsesWith(I->getAliasee());
-    toDelete.push_back(I);
+    toDelete.push_back(&*I);
   }
   numChanged += toDelete.size();
 

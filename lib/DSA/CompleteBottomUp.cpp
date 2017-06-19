@@ -52,7 +52,7 @@ CompleteBUDataStructures::runOnModule (Module &M) {
 
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())){
-      getOrCreateGraph(F);
+      getOrCreateGraph(&*F);
     }
   }
 
@@ -60,7 +60,7 @@ CompleteBUDataStructures::runOnModule (Module &M) {
   formGlobalECs();
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())) {
-      if (DSGraph * Graph = getOrCreateGraph(F)) {
+      if (DSGraph * Graph = getOrCreateGraph(&*F)) {
         cloneIntoGlobals(Graph, DSGraph::DontCloneCallNodes |
                         DSGraph::DontCloneAuxCallNodes |
                         DSGraph::StripAllocaBit);
@@ -70,7 +70,7 @@ CompleteBUDataStructures::runOnModule (Module &M) {
 
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())) {
-      if (DSGraph * Graph = getOrCreateGraph(F)) {
+      if (DSGraph * Graph = getOrCreateGraph(&*F)) {
         cloneGlobalsInto(Graph, DSGraph::DontCloneCallNodes |
                         DSGraph::DontCloneAuxCallNodes);
       }

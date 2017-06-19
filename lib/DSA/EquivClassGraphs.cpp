@@ -47,7 +47,7 @@ bool EquivBUDataStructures::runOnModule(Module &M) {
   for(Module::iterator F = M.begin(); F != M.end(); ++F) 
   {
     if(!(F->isDeclaration()))
-      graphList.insert(getOrCreateGraph(F));
+      graphList.insert(getOrCreateGraph(&*F));
   }
 
   //update the EQ class from indirect calls
@@ -59,7 +59,7 @@ bool EquivBUDataStructures::runOnModule(Module &M) {
   for(Module::iterator F = M.begin(); F != M.end(); ++F) 
   {
     if(!(F->isDeclaration()))
-      graphList.erase(getOrCreateGraph(F));
+      graphList.erase(getOrCreateGraph(&*F));
   }
   // free memory for the DSGraphs, no longer in use.
   for(std::set<DSGraph*>::iterator i = graphList.begin(),e = graphList.end();
@@ -72,7 +72,7 @@ bool EquivBUDataStructures::runOnModule(Module &M) {
 
   for (Module::iterator F = M.begin(); F != M.end(); ++F) {
     if (!(F->isDeclaration())) {
-      if (DSGraph * Graph = getOrCreateGraph(F)) {
+      if (DSGraph * Graph = getOrCreateGraph(&*F)) {
         cloneGlobalsInto(Graph, DSGraph::DontCloneCallNodes |
                         DSGraph::DontCloneAuxCallNodes);
       }

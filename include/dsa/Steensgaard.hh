@@ -25,7 +25,6 @@ namespace llvm
 
     virtual void getAnalysisUsage(AnalysisUsage &AU) const 
     {
-      AU.addRequired<DataLayoutPass>();
       AU.addRequired<StdLibDataStructures>();
       AU.setPreservesAll();
     }
