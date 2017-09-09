@@ -66,6 +66,15 @@ namespace {
 
 extern cl::opt<bool> TypeInferenceOptimize;
 
+// Returns true if the function is a special one used only by SeaHorn
+// or Crab-llvm
+static bool isVerifierCall(const Function &f) {
+  return
+    (f.getName().startswith("verifier.zero_initializer") ||
+     f.getName().startswith("verifier.int_initializer"));
+}
+
+
 // Determines if the DSGraph 'should' have a node for a given value.
 static bool shouldHaveNodeForValue(const Value *V) {
   // Peer through casts
@@ -608,6 +617,9 @@ static void markIncompleteNode(DSNode *N) {
 }
 
 static void markIncomplete(DSCallSite &Call) {
+  if (Call.getCalleeFunc() && isVerifierCall(*(Call.getCalleeFunc())))
+    return;
+  
   // Then the return value is certainly incomplete!
   markIncompleteNode(Call.getRetVal().getNode());
 
@@ -701,6 +713,9 @@ static void markExternalNode(DSNode *N, DenseSet<DSNode *> & processedNodes) {
 
 // markExternal --marks the specified callsite external, using 'processedNodes' to track recursion.
 static void markExternal(const DSCallSite &Call, DenseSet<DSNode *> & processedNodes) {
+  if (Call.getCalleeFunc() && isVerifierCall(*(Call.getCalleeFunc())))
+    return;
+      
   markExternalNode(Call.getRetVal().getNode(), processedNodes);
 
   markExternalNode(Call.getVAVal().getNode(), processedNodes);
