@@ -1261,7 +1261,7 @@ void DSGraph::AssertGraphOK() const {
     const Function &F = *RI->first;
     for (Function::const_arg_iterator AI = F.arg_begin(); AI != F.arg_end(); ++AI)
       if (isa<PointerType>(AI->getType()))
-        assert(!getNodeForValue(AI).isNull() &&
+        assert(!getNodeForValue(&*AI).isNull() &&
                "Pointer argument must be in the scalar map!");
     if (F.isVarArg())
       assert(VANodes.find(&F) != VANodes.end() &&

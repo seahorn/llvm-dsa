@@ -142,7 +142,7 @@ static void simplifyGEP(GetElementPtrInst *GEP) {
       GetElementPtrInst *GEPNew =  (GEP->isInBounds() && Src->isInBounds()) ?
         GetElementPtrInst::CreateInBounds(Src->getOperand(0), Indices,
                                           GEP->getName(), GEP) :
-        GetElementPtrInst::Create(cast<PointerType>(Src->getOperand(0))->getElementType(),
+        GetElementPtrInst::Create(cast<PointerType>(Src->getOperand(0)->getType())->getElementType(),
 				  Src->getOperand(0), Indices,
                                   GEP->getName(), GEP);
       numMerged++;
