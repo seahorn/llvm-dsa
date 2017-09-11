@@ -617,7 +617,9 @@ static void markIncompleteNode(DSNode *N) {
 }
 
 static void markIncomplete(DSCallSite &Call) {
-  if (Call.getCalleeFunc() && isVerifierCall(*(Call.getCalleeFunc())))
+  CallSite CS = Call.getCallSite();
+  Function *callee= CS.getCalledFunction();
+  if (callee && isVerifierCall(*callee))
     return;
   
   // Then the return value is certainly incomplete!
@@ -713,9 +715,11 @@ static void markExternalNode(DSNode *N, DenseSet<DSNode *> & processedNodes) {
 
 // markExternal --marks the specified callsite external, using 'processedNodes' to track recursion.
 static void markExternal(const DSCallSite &Call, DenseSet<DSNode *> & processedNodes) {
-  if (Call.getCalleeFunc() && isVerifierCall(*(Call.getCalleeFunc())))
+  CallSite CS = Call.getCallSite();
+  Function *callee= CS.getCalledFunction();
+  if (callee && isVerifierCall(*callee))
     return;
-      
+
   markExternalNode(Call.getRetVal().getNode(), processedNodes);
 
   markExternalNode(Call.getVAVal().getNode(), processedNodes);
