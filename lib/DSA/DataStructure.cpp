@@ -129,7 +129,7 @@ void DSScalarMap::spliceFrom(DSScalarMap &RHS) {
 //===----------------------------------------------------------------------===//
 
 DSNode::DSNode(DSGraph *G)
-  : NumReferrers(0), Size(0), ParentGraph(G), NodeType(0), m_scalar(0) {
+  : NumReferrers(0), Size(0), ParentGraph(G), m_scalar(0), NodeType(0) {
     // Add the type entry if it is specified...
     if (G) G->addNode(this);
     ++NumNodeAllocated;
@@ -138,7 +138,7 @@ DSNode::DSNode(DSGraph *G)
 // DSNode copy constructor... do not copy over the referrers list!
 DSNode::DSNode(const DSNode &N, DSGraph *G, bool NullLinks)
   : NumReferrers(0), Size(N.Size), ParentGraph(G), TyMap(N.TyMap),
-    Globals(N.Globals), NodeType(N.NodeType), m_scalar(N.m_scalar) {
+    Globals(N.Globals), m_scalar(N.m_scalar), NodeType(N.NodeType) {
     if (!NullLinks) Links = N.Links;
     G->addNode(this);
     ++NumNodeAllocated;

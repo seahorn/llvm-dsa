@@ -22,3 +22,4 @@ add_library (DSA STATIC
   Steensgaard.cpp
 )
 
+install(TARGETS DSA ARCHIVE DESTINATION lib)

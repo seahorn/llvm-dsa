@@ -20,6 +20,7 @@
 #include "dsa/DSGraph.h"
 
 #include "llvm/Pass.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <set>
 
@@ -60,7 +61,7 @@ struct TypeSafety : public ModulePass {
     TypeSafety() : ModulePass(ID) {}
     virtual bool runOnModule (Module & M);
 
-    const char *getPassName() const {
+    StringRef getPassName() const {
       return "DSA Type-Safety Analysis";
     }
 

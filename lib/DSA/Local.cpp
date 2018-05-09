@@ -740,7 +740,7 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
   //
   for (gep_type_iterator I = gep_type_begin(GEP), E = gep_type_end(GEP);
        I != E; ++I)
-    if (StructType *STy = dyn_cast<StructType>(*I)) {
+    if (StructType *STy = I.getStructTypeOrNull()) {
       // indexing into a structure
       // next index must be a constant
       const ConstantInt* CUI = cast<ConstantInt>(I.getOperand());
@@ -771,7 +771,9 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
           // J is the type of the next index.
           // Uncomment the line below to get all the nested types.
           gep_type_iterator J = I;
-          while (isa<ArrayType>(*(++J))) {
+	  // llvm 3.8
+          //while (isa<ArrayType>(*(++J))) {
+	  while ((++J).isSequential()) {	  
             //      NodeH.getNode()->mergeTypeInfo(AT1, NodeH.getOffset() + Offset);
             if((++I) == E) {
               break;
@@ -783,7 +785,7 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
           }
         }
       }
-    } else if (ArrayType *ATy = dyn_cast<ArrayType>(*I)) {
+    } else if (ArrayType *ATy = dyn_cast<ArrayType>(I.getIndexedType())) {
       // indexing into an array.
       NodeH.getNode()->setArrayMarker();
       Type *CurTy = ATy->getElementType();
@@ -812,7 +814,7 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         Offset = 0;
         break;
       }
-    } else if (const PointerType *PtrTy = dyn_cast<PointerType>(*I)) {
+    } else if (const PointerType *PtrTy = dyn_cast<PointerType>(I.getIndexedType())) {
       // Get the type pointed to by the pointer
       Type *CurTy = PtrTy->getElementType();
 
@@ -1474,7 +1476,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
     // Add initializers for all of the globals to the globals graph.
     for (Module::global_iterator I = M.global_begin(), E = M.global_end();
          I != E; ++I)
-      if (!(I->hasSection() && std::strcmp(I->getSection(),"llvm.metadata") == 0)) {
+      if (!(I->hasSection() && I->getSection().compare("llvm.metadata") == 0)) {
         if (I->isDeclaration())
           GGB.mergeExternalGlobal(&*I);
         else

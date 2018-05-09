@@ -47,7 +47,8 @@ public:
   typedef std::map<unsigned, DSNodeHandle> LinkMapTy;
 
 private:
-  friend struct ilist_sentinel_traits<DSNode>;
+  //friend struct ilist_sentinel_traits<DSNode>;
+  
   //Sentinel
   DSNode() : NumReferrers(0), Size(0), NodeType(0) {}
   

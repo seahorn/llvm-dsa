@@ -15,6 +15,7 @@
 #include <string>
 #include "llvm/Pass.h"
 #include "llvm/IR/Value.h"
+#include "llvm/ADT/StringRef.h"
 
 namespace llvm {
   class Function;
@@ -45,7 +46,7 @@ namespace llvm {
     virtual ~AllocIdentify();
     bool runOnModule(llvm::Module&);
     virtual void getAnalysisUsage(llvm::AnalysisUsage &Info) const;
-    virtual const char * getPassName() const {
+    virtual StringRef getPassName() const {
       return "Allocator Identification Analysis (find malloc/free wrappers)";
     }
   };
