@@ -53,6 +53,8 @@ OBJECTS := $(patsubst %.cc,%.o,${SOURCES})
 
 INSTALL = install
 
+.PHONY: lib
+
 all: ${LIBRARY}
 
 ${LIBRARY}: ${SOURCES}
