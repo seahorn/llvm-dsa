@@ -19,13 +19,14 @@
 #define DEBUG_TYPE "call-targets"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/Constants.h"
 #include "dsa/DataStructure.h"
 #include "dsa/DSGraph.h"
 #include "dsa/CallTargets.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/FormattedStream.h"
-#include "llvm/IR/Constants.h"
+#include "llvm/Support/CommandLine.h"
 #include <ostream>
 using namespace llvm;
 
@@ -37,6 +38,20 @@ namespace {
   STATISTIC (CompleteInd, "Number of complete indirect calls");
   STATISTIC (CompleteEmpty, "Number of complete empty calls");
 
+}
+
+// If enabled then it can be, in general, unsound.
+static llvm::cl::opt<bool>
+IgnoreExternal("calltarget-ignore-external",
+        llvm::cl::desc ("Ignore external nodes when marking complete a call site"),
+        llvm::cl::init (false));
+
+static inline bool isExternal(DSNode* N) {
+  if (IgnoreExternal) {
+    // pretend the node is not external
+    return false;
+  }
+  return N->isExternalNode();
 }
 
 namespace dsa {
@@ -108,11 +123,11 @@ void CallTargetFinder<dsa>::findIndTargets(Module &M)
                   ->getNodeForValue(cs.getCalledValue()).getNode();
                 assert (N && "CallTarget: findIndTargets: No DSNode!");
 
-                if (!N->isIncompleteNode() && !N->isExternalNode() && IndMap[cs].size()) {
+                if (!N->isIncompleteNode() && !isExternal(N) && IndMap[cs].size()) {
                   CompleteSites.insert(cs);
                   ++CompleteInd;
                 } 
-                if (!N->isIncompleteNode() && !N->isExternalNode() && !IndMap[cs].size()) {
+                if (!N->isIncompleteNode() && !isExternal(N) && !IndMap[cs].size()) {
                   ++CompleteEmpty;
                   DEBUG(errs() << "Call site empty: '"
                                 << cs.getInstruction()->getName()
