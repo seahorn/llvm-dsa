@@ -64,11 +64,8 @@ ${LIBRARY}: ${SOURCES}
 lib: ${OBJECTS} 
 	$(CXX) ${OBJECTS} ${LIBFLAGS} -o ${LIBRARY} ${CXX_FLAGS} ${LD_FLAGS} 
 
-src/%.o: src/%.cpp
-	$(CXX) ${CXX_FLAGS} $< -c -o $@
-
 %.o: %.cpp
-	$(CXX) -I. ${CXX_FLAGS} $< -c 
+	$(CXX) -I. ${CXX_FLAGS} $< -c -o $@
 
 clean: 
 	rm -rf ${OBJECTS} ${LIBRARY} 
@@ -76,8 +73,4 @@ clean:
 install: ${LIBRARY}
 	mkdir -p $(INSTALL_DIR)
 	$(INSTALL) -m 664 ${LIBRARY} $(INSTALL_DIR)
-
-# XX: a bit dangerous
-# uninstall:
-# 	rm -Rf $(INSTALL_DIR)
 
