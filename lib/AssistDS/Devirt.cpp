@@ -12,6 +12,7 @@
 #include "assistDS/Devirt.h"
 
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
 
 #include <iostream>
@@ -372,12 +373,16 @@ Devirtualize::visitCallSite (CallSite &CS) {
   if (isa<Function>(CalledValue->stripPointerCasts()))
     return;
 
+
   //
   // Second, we will only transform those call sites which are complete (i.e.,
   // for which we know all of the call targets).
   //
-  if (!(CTF->isComplete(CS)))
+  if (!(CTF->isComplete(CS))) {
+    errs () << "Warning: " << *(CS.getInstruction()) << " is an indirect call\n"
+	    << "Skipped indirect call because we don't know all the call targets\n";
     return;
+  }
 
   //
   // This is an indirect call site.  Put it in the worklist of call sites to
