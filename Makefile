@@ -49,7 +49,7 @@ endif
 SOURCES =  $(wildcard lib/AssistDS/Devirt.cpp)
 SOURCES += $(wildcard lib/DSA/*.cpp)
 
-OBJECTS := $(patsubst %.cc,%.o,${SOURCES}) 
+OBJECTS := $(patsubst %.cpp,%.o,${SOURCES}) 
 
 INSTALL = install
 
@@ -64,10 +64,10 @@ ${LIBRARY}: ${SOURCES}
 lib: ${OBJECTS} 
 	$(CXX) ${OBJECTS} ${LIBFLAGS} -o ${LIBRARY} ${CXX_FLAGS} ${LD_FLAGS} 
 
-src/%.o: src/%.cc
+src/%.o: src/%.cpp
 	$(CXX) ${CXX_FLAGS} $< -c -o $@
 
-%.o: %.cc
+%.o: %.cpp
 	$(CXX) -I. ${CXX_FLAGS} $< -c 
 
 clean: 
