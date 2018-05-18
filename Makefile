@@ -46,7 +46,7 @@ LIBRARY = ${LIBRARYNAME}.so
 LIBFLAGS = -shared -Wl,-soname,${LIBRARY}
 endif
 
-SOURCES =  $(wildcard lib/AssistDS/Devirt.cpp)
+SOURCES =  $(wildcard lib/AssistDS/Devirt.cpp lib/AssistDS/DevirtTypes.cpp)
 SOURCES += $(wildcard lib/DSA/*.cpp)
 
 OBJECTS := $(patsubst %.cpp,%.o,${SOURCES}) 
