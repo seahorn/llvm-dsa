@@ -188,7 +188,12 @@ namespace
     }
 
     // -- no direct calls in this alias set, nothing to construct
-    if (m_aliasSets.count (id) <= 0) return nullptr;    
+    if (m_aliasSets.count (id) <= 0) {
+      LOG_DEVIRT(errs ()
+		 << "No possible callees based on types for "
+		 << *CS.getInstruction() << "\n";);
+      return nullptr;
+    }
     AliasSet &TypesTargets = m_aliasSets [id];
 
     // the final targets to build the bounce function    
@@ -468,10 +473,12 @@ namespace
       // -- resolved by a function pointer
       if (F.hasLocalLinkage () && !F.hasAddressTaken ()) continue;
 
-      // -- skip calls to declarations, these are resolved implicitly
-      // -- by calling through the function pointer argument in the
-      // -- default case of bounce function
-      if (F.isDeclaration ()) continue;
+      if (HasDefault) {
+	// -- skip calls to declarations, these are resolved implicitly
+	// -- by calling through the function pointer argument in the
+	// -- default case of bounce function
+	if (F.isDeclaration ()) continue;
+      }
       
       // -- assume entry point is never called indirectly
       if (F.getName ().equals ("main")) continue;
