@@ -1529,7 +1529,7 @@ llvm::functionIsCallable (ImmutableCallSite CS, const Function* F) {
   //
   if (!noDSACallConv) {
     Function::const_arg_iterator farg = F->arg_begin(), fend = F->arg_end();
-    for (unsigned index = 1; index < (CS.arg_size() + 1) && farg != fend;
+    for (unsigned index = 0; index < CS.arg_size() && farg != fend;
         ++farg, ++index) {
       if (CS.isByValArgument(index) != farg->hasByValAttr()) {
         return false;
