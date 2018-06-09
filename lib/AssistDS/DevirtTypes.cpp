@@ -2,11 +2,19 @@
 //
 // This class is similar to Devirt but it is refined in two ways:
 // 
-// - Only targets that match indirect the call site's type signature
+// - Only targets that match the call site's type signature
 //   are considered.
 //
 // - If DSA provides no targets then the indirect call is resolved by
 //   considering all possible targets whose signature match.
+//
+// TODO: some callsites might not match (type signature-wise) to any
+// defined function if the return value is removed becuase it is
+// marked as dead.
+//
+// FIXME: on-the-fly update of the call graph is disabled because it's
+// buggy.  Instead, we don't mark the call graph as preserved so it
+// will be updated by the pass manager.
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/Constants.h"
@@ -24,6 +32,8 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/ADT/Statistic.h"
 #include "dsa/CallTargets.h"
+
+#include "boost/unordered_map.hpp"
 
 #define DEBUG_TYPE "devirt-types"
 
@@ -67,7 +77,7 @@ namespace
 
     typedef const llvm::PointerType *AliasSetId;
     typedef SmallVector<const Function *, 8> AliasSet;
-
+    
     // Call graph of the program
     CallGraph * CG;    
 
@@ -112,9 +122,11 @@ namespace
     
     virtual void getAnalysisUsage(AnalysisUsage &AU) const
     {
-      AU.setPreservesAll ();
-      AU.addRequired<CallGraphWrapperPass> ();
-      AU.addPreserved<CallGraphWrapperPass> ();
+      //AU.setPreservesAll ();
+      //FIXME: we don't preserve the call graph
+      //AU.addPreserved<CallGraphWrapperPass> ();
+      
+      AU.addRequired<CallGraphWrapperPass> ();      
       AU.addRequired<dsa::CallTargetFinder<EQTDDataStructures>>();      
     }
     
@@ -187,27 +199,30 @@ namespace
       }
     }
 
+    
     // -- no direct calls in this alias set, nothing to construct
     if (m_aliasSets.count (id) <= 0) {
       LOG_DEVIRT(errs ()
-		 << "No possible callees based on types for "
-		 << *CS.getInstruction() << "\n";);
+		 << "No callees based on types for " << *CS.getInstruction() << "\n";
+		 errs () << "Possible callees based on aliasing:\n";
+		 std::set<const Function*> DsaAliasSet(CTF->begin(CS), CTF->end(CS));
+		 for (std::set<const Function*>::iterator it = DsaAliasSet.begin(),
+			et = DsaAliasSet.end(); it!=et; ++it) {
+		   errs () << "\t" << (*it)->getName() << " " << *((*it)->getType()) << "\n";
+		 });
       return nullptr;
     }
+    
     AliasSet &TypesTargets = m_aliasSets [id];
-
     // the final targets to build the bounce function    
     AliasSet Targets; 
     if (CTF->isComplete(CS))  {
-      // We need to filter out those targets whose signature do not
-      // match.
-      std::set<const Function *> TypesTargetsSet (TypesTargets.begin(), TypesTargets.end()); 
-      for (std::vector<const Function*>::iterator it = CTF->begin(CS),
-	     et = CTF->end(CS); it!=et; ++it) {
-	if (TypesTargetsSet.count(*it) > 0) {
-	  Targets.push_back(*it);
-	}
-      }
+      // We filter out those targets whose signature do not match.
+      std::set<const Function *> TypesTargetsSet (TypesTargets.begin(), TypesTargets.end());
+      std::set<const Function*> DsaAliasSet(CTF->begin(CS), CTF->end(CS));
+      std::set_intersection(DsaAliasSet.begin(), DsaAliasSet.end(),
+			    TypesTargetsSet.begin(), TypesTargetsSet.end(),
+			    Targets.begin());
       // XXX: we cannot consider all the targets since DSA can be
       // imprecise and might consider targets with an inconsistent
       // type signature for CS.
@@ -305,7 +320,8 @@ namespace
       if (CS.getType()->isVoidTy()) {
 	ReturnInst::Create (M->getContext(), defaultBB);
       } else {
-	Value* defaultRet = CallInst::Create (&*(F->arg_begin()), fargs, "", defaultBB); 
+	CallInst *defaultRet = CallInst::Create(&*(F->arg_begin()), fargs, "", defaultBB);
+	// TODO: update call graph
 	ReturnInst::Create (M->getContext(), defaultRet, defaultBB);
       }
     } else {
@@ -461,7 +477,8 @@ namespace
     CTF = &getAnalysis<dsa::CallTargetFinder<EQTDDataStructures> >();
     
     // -- Get the call graph
-    CG = &(getAnalysis<CallGraphWrapperPass> ().getCallGraph ());
+    //FIXME: we don't update the call graph
+    //CG = &(getAnalysis<CallGraphWrapperPass> ().getCallGraph ());
 
     // -- Create alias sets
     for (auto const &F: M)
@@ -498,7 +515,7 @@ namespace
       CallSite CS (I);
       mkDirectCall (CS);
     }
-    
+
     // Conservatively assume that we've changed one or more call sites.
     return Changed;
   }
