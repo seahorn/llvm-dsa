@@ -881,7 +881,10 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         // element of the type to which the pointer points.
         //
         if (!isa<ArrayType>(CurTy) && NodeH.getNode()->getSize() <= 0){
-          NodeH.getNode()->growSize(TD.getTypeAllocSize(CurTy));
+	  // JN: in some cases CurTy is not sized so getTypeAllocSize fails.
+	  if (CurTy->isSized()) {
+	    NodeH.getNode()->growSize(TD.getTypeAllocSize(CurTy));
+	  }
         } else if (isa<ArrayType>(CurTy) && NodeH.getNode()->getSize() <= 0){
           Type *ETy = (cast<ArrayType>(CurTy))->getElementType();
           while (isa<ArrayType>(ETy)) {
@@ -897,11 +900,11 @@ void GraphBuilder::visitGetElementPtrInst(User &GEP) {
         //     offset.
         //  2) The offset of the pointer is already non-zero.
         //  3) The size of the array element does not match the size into which
-        //     the pointer indexing is indexing.
-        //
+        //     the pointer indexing is indexing
         if (NodeH.getOffset() || Offset != 0 ||
             (!isa<ArrayType>(CurTy) &&
-             (NodeH.getNode()->getSize() != TD.getTypeAllocSize(CurTy)))) {
+             (!CurTy->isSized() /* Added by JN*/ ||
+	      (NodeH.getNode()->getSize() != TD.getTypeAllocSize(CurTy))))) {
           NodeH.getNode()->foldNodeCompletely();
           NodeH.getNode();
           Offset = 0;
