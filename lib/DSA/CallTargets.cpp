@@ -159,7 +159,7 @@ void CallTargetFinder<dsa>::print(llvm::raw_ostream &O, const Module *M) const
       if (!isComplete(ii->first)) {
         O << "* ";
         CallSite cs = ii->first;
-        cs.getInstruction()->dump();
+	O << *cs.getInstruction();
         O << cs.getInstruction()->getParent()->getParent()->getName().str() << " "
           << cs.getInstruction()->getName().str() << " ";
       }
