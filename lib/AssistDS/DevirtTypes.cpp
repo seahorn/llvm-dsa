@@ -188,18 +188,21 @@ namespace
     assert (isIndirectCall (CS) && "Not an indirect call");
     
     AliasSetId id = typeAliasId (CS);
-    {
-      auto it = m_bounceMap.find (id);
-      if (it != m_bounceMap.end ()) {
-	auto res = it->second;
-	LOG_DEVIRT(errs () << "Reusing a bounce for call site:\n"
-		   << *CS.getInstruction () << " using: \n"
-		   << res->getName() << "\n";);
-	return res;
-      }
-    }
+    // -- We don't reuse call sites because we might lose precision if
+    // -- we saw a type-consistent callsite but with less precise dsa
+    // -- points-to information.
+    //    
+    // {
+    //   auto it = m_bounceMap.find (id);
+    //   if (it != m_bounceMap.end ()) {
+    // 	auto res = it->second;
+    // 	LOG_DEVIRT(errs () << "Reusing a bounce for call site:\n"
+    // 		   << *CS.getInstruction () << " using: \n"
+    // 		   << res->getName() << "\n";);
+    // 	return res;
+    //   }
+    // }
 
-    
     // -- no direct calls in this alias set, nothing to construct
     if (m_aliasSets.count (id) <= 0) {
       LOG_DEVIRT(errs ()
@@ -217,17 +220,13 @@ namespace
     // the final targets to build the bounce function    
     AliasSet Targets; 
     if (CTF->isComplete(CS))  {
-      // We filter out those targets whose signature do not match.
+      // We filter out those targets whose signature do not match with
+      // the callsite
       std::set<const Function *> TypesTargetsSet (TypesTargets.begin(), TypesTargets.end());
       std::set<const Function*> DsaAliasSet(CTF->begin(CS), CTF->end(CS));
       std::set_intersection(DsaAliasSet.begin(), DsaAliasSet.end(),
 			    TypesTargetsSet.begin(), TypesTargetsSet.end(),
-			    Targets.begin());
-      // XXX: we cannot consider all the targets since DSA can be
-      // imprecise and might consider targets with an inconsistent
-      // type signature for CS.
-      // 
-      // Targets.insert(Targets.end(), CTF->begin(CS), CTF->end(CS));
+			    std::back_inserter(Targets));
     }
     if (Targets.empty()) {
       // We are here if we don't know all possible callees or they do
@@ -291,8 +290,9 @@ namespace
     DenseMap<const Function*, BasicBlock*> targets;
     for (const Function *FL : Targets)
     {
+      StringRef FLName = (FL->hasName() ? FL->getName() : "target_fn");
       // Create the basic block for doing the direct call
-      BasicBlock* BL = BasicBlock::Create (M->getContext(), FL->getName(), F);
+      BasicBlock* BL = BasicBlock::Create (M->getContext(), FLName, F);
       targets[FL] = BL;
       // Create the direct function call
       CallInst* directCall = CallInst::Create (const_cast<Function*>(FL),
@@ -357,8 +357,9 @@ namespace
       // basic block performing the direct call for that function; otherwise,
       // we'll branch to the next function call target.
       BasicBlock* TB = targets [FL];
+      StringRef FLName = (FL->hasName() ? FL->getName() : "target_fn");
       BasicBlock* newB = BasicBlock::Create (M->getContext(),
-                                             "test." + FL->getName(),
+                                             "test." + FLName,
                                              F);
       CmpInst * setcc = CmpInst::Create (Instruction::ICmp,
                                          CmpInst::ICMP_EQ,
