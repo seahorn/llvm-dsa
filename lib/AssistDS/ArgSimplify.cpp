@@ -142,8 +142,11 @@ namespace {
 
     bool runOnModule(Module& M) {
 
-      for (Module::iterator I = M.begin(); I != M.end(); ++I) 
-        if (!I->isDeclaration() && !I->mayBeOverridden()) {
+      // mayBeOverridden not available with llvm 5.0.  I think this
+      // method returns true if the definition of this function may be
+      // replaced by something non-equivalent at link time.
+      for (Module::iterator I = M.begin(); I != M.end(); ++I)
+        if (!I->isDeclaration() /*&& !I->mayBeOverridden()*/) {
           if(I->getName().str() == "main")
             continue;
           std::vector<unsigned> Args;

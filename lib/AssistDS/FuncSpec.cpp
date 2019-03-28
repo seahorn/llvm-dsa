@@ -50,8 +50,11 @@ bool FuncSpec::runOnModule(Module& M) {
   std::map<CallInst*, std::vector<std::pair<unsigned, Constant*> > > cloneSites;
   std::map<std::pair<Function*, std::vector<std::pair<unsigned, Constant*> > >, Function* > toClone;
 
+  // mayBeOverridden not available with llvm 5.0.  I think this
+  // method returns true if the definition of this function may be
+  // replaced by something non-equivalent at link time.
   for (Module::iterator I = M.begin(); I != M.end(); ++I)
-    if (!I->isDeclaration() && !I->mayBeOverridden()) {
+    if (!I->isDeclaration() /*&& !I->mayBeOverridden()*/) {
       std::vector<unsigned> FPArgs;
       for (Function::arg_iterator ii = I->arg_begin(), ee = I->arg_end();
            ii != ee; ++ii) {
@@ -97,7 +100,7 @@ bool FuncSpec::runOnModule(Module& M) {
   for (std::map<std::pair<Function*, std::vector<std::pair<unsigned, Constant*> > >, Function* >::iterator I = toClone.begin(), E = toClone.end(); I != E; ++I) {
     // Clone all the functions we need cloned
     ValueToValueMapTy VMap;
-    Function* DirectF = CloneFunction(I->first.first, VMap, false);
+    Function* DirectF = CloneFunction(I->first.first, VMap);
     DirectF->setName(I->first.first->getName().str() + "_SPEC");
     DirectF->setLinkage(GlobalValue::InternalLinkage);
     I->first.first->getParent()->getFunctionList().push_back(DirectF);

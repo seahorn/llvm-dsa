@@ -70,7 +70,10 @@ IndClone::runOnModule(Module& M) {
     // Only clone functions which are defined and cannot be replaced by another
     // function by the linker.
     //
-    if (!I->isDeclaration() && !I->mayBeOverridden()) {
+    // mayBeOverridden not available with llvm 5.0.  I think this
+    // method returns true if the definition of this function may be
+    // replaced by something non-equivalent at link time.
+    if (!I->isDeclaration()  /*&& !I->mayBeOverridden()*/) {
       for (Value::user_iterator ui = I->user_begin(), ue = I->user_end();
           ui != ue; ++ui) {
         if (!isa<CallInst>(*ui) && !isa<InvokeInst>(*ui)) {
@@ -128,7 +131,7 @@ IndClone::runOnModule(Module& M) {
     //
     Function * Original = toClone[index];
     ValueToValueMapTy VMap;
-    Function* DirectF = CloneFunction(Original, VMap, false);
+    Function* DirectF = CloneFunction(Original, VMap);
     DirectF->setName(Original->getName() + "_DIRECT");
 
     //

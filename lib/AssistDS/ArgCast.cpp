@@ -53,8 +53,13 @@ bool ArgCast::runOnModule(Module& M) {
 
   std::vector<CallInst*> worklist;
   for (Module::iterator I = M.begin(); I != M.end(); ++I) {
-    if (I->mayBeOverridden())
-      continue;
+    // Not available with llvm 5.0.
+    // I think this method returns true if the definition of this
+    // function may be replaced by something non-equivalent at link
+    // time.
+    // if (I->mayBeOverridden())
+    //   continue;
+    
     // Find all uses of this function
     for(Value::user_iterator ui = I->user_begin(), ue = I->user_end(); ui != ue; ) {
       // check if is ever casted to a different function type

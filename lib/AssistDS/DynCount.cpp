@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Pass.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Constants.h"
@@ -29,7 +30,7 @@ protected:
 public:
   static char ID;
   Dyncount () : ModulePass (ID) { }
-  const char *getPassName() const {
+  StringRef getPassName() const {
     return "Count safe/unsafe load/store";
   }
   virtual bool runOnModule (Module & M);
@@ -128,7 +129,7 @@ Dyncount::runOnModule (Module & M) {
     : M.getFunction ("MAIN__");
 
   BasicBlock & BB = MainFunc->getEntryBlock();
-  Constant * Setup = M.getOrInsertFunction ("DYN_COUNT_setup", Type::getVoidTy(M.getContext()), Total->getType(), Safe->getType(), NULL);
+  Constant * Setup = M.getOrInsertFunction ("DYN_COUNT_setup", Type::getVoidTy(M.getContext()), Total->getType(), Safe->getType());
   std::vector<Value *> args;
   args.push_back (Total);
   args.push_back (Safe);
