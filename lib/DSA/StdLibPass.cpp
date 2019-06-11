@@ -461,7 +461,7 @@ StdLibDataStructures::eraseCallsTo(Function* F) {
       if (CI->getCalledValue() == F) {
         DSGraph* Graph = getDSGraph(*CI->getParent()->getParent());
         //delete the call
-        DEBUG(errs() << "Removing " << F->getName().str() << " from "
+        LLVM_DEBUG(errs() << "Removing " << F->getName().str() << " from "
               << CI->getParent()->getParent()->getName().str() << "\n");
         ToRemove.insert(std::make_pair(Graph, F));
       }
@@ -469,7 +469,7 @@ StdLibDataStructures::eraseCallsTo(Function* F) {
       if (CI->getCalledValue() == F) {
         DSGraph* Graph = getDSGraph(*CI->getParent()->getParent());
         //delete the call
-        DEBUG(errs() << "Removing " << F->getName().str() << " from "
+        LLVM_DEBUG(errs() << "Removing " << F->getName().str() << " from "
               << CI->getParent()->getParent()->getName().str() << "\n");
         ToRemove.insert(std::make_pair(Graph, F));
       }
@@ -481,7 +481,7 @@ StdLibDataStructures::eraseCallsTo(Function* F) {
             if(CI->getCalledValue() == CE) {
               DSGraph* Graph = getDSGraph(*CI->getParent()->getParent());
               //delete the call
-              DEBUG(errs() << "Removing " << F->getName().str() << " from "
+              LLVM_DEBUG(errs() << "Removing " << F->getName().str() << " from "
                     << CI->getParent()->getParent()->getName().str() << "\n");
               ToRemove.insert(std::make_pair(Graph, F));
             }
@@ -660,12 +660,12 @@ StdLibDataStructures::runOnModule (Module &M) {
       G->markIncompleteNodes(DSGraph::MarkFormalArgs
                              |DSGraph::IgnoreGlobals);
       G->computeExternalFlags(EFlags);
-      DEBUG(G->AssertGraphOK());
+      LLVM_DEBUG(G->AssertGraphOK());
     }
   GlobalsGraph->markIncompleteNodes(DSGraph::MarkFormalArgs
                                     |DSGraph::IgnoreGlobals);
   GlobalsGraph->computeExternalFlags(DSGraph::ProcessCallSites);
-  DEBUG(GlobalsGraph->AssertGraphOK());
+  LLVM_DEBUG(GlobalsGraph->AssertGraphOK());
   for (Module::iterator I = M.begin(), E = M.end(); I != E; ++I)
     if (!I->isDeclaration()) {
       DSGraph *Graph = getOrCreateGraph(&*I);

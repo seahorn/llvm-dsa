@@ -1151,7 +1151,7 @@ bool GraphBuilder::visitIntrinsic(CallSite CS, Function *F) {
         return true;
     }
 
-    DEBUG(errs() << "[dsa:local] Unhandled intrinsic: " << F->getName() << "\n");
+    LLVM_DEBUG(errs() << "[dsa:local] Unhandled intrinsic: " << F->getName() << "\n");
     assert(0 && "Unhandled intrinsic");
     return false;
   }
@@ -1196,7 +1196,7 @@ void GraphBuilder::visitCallSite(CallSite CS) {
   if (!isa<Function>(Callee)) {
     CalleeNode = getValueDest(Callee).getNode();
     if (CalleeNode == 0) {
-      DEBUG(errs() << "WARNING: Program is calling through a null pointer?\n" << *I);
+      LLVM_DEBUG(errs() << "WARNING: Program is calling through a null pointer?\n" << *I);
       return;  // Calling a null pointer?
     }
   }
@@ -1362,7 +1362,7 @@ GraphBuilder::MergeConstantInitIntoNode(DSNodeHandle &NH,
         // If this is one of those cute structures that ends with a zero-length
         // array, just fold the DSNode now and get it over with.
         //
-        DEBUG(errs() << "Zero size element at end of struct\n" );
+        LLVM_DEBUG(errs() << "Zero size element at end of struct\n" );
         NHN->foldNodeCompletely();
       } else {
         assert(0 && "type was smaller than offsets of struct layout indicate");
@@ -1449,7 +1449,7 @@ void handleMagicSections(DSGraph* GlobalsGraph, Module& M) {
           DSNodeHandle& DHV = GlobalsGraph->getNodeForValue(V);
           for (svset<Value*>::iterator SI = inSection.begin(),
                SE = inSection.end(); SI != SE; ++SI) {
-            DEBUG(errs() << "Merging " << V->getName().str() << " with "
+            LLVM_DEBUG(errs() << "Merging " << V->getName().str() << " with "
                   << (*SI)->getName().str() << "\n");
             GlobalsGraph->getNodeForValue(*SI).mergeWith(DHV);
           }
@@ -1523,7 +1523,7 @@ bool LocalDataStructures::runOnModule(Module &M) {
                        DSGraph::DontCloneAuxCallNodes |
                        DSGraph::StripAllocaBit);
       formGlobalECs();
-      DEBUG(G->AssertGraphOK());
+      LLVM_DEBUG(G->AssertGraphOK());
     }
 
   //GlobalsGraph->removeTriviallyDeadNodes();

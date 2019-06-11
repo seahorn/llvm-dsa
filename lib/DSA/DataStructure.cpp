@@ -50,8 +50,8 @@ bool DSNodeHandle::isForwarding() const {
 
 DSNode *DSNodeHandle::HandleForwarding() const {
   assert(N->isForwarding() && "Can only be invoked if forwarding!");
-  DEBUG(
-    { //assert not looping
+ 
+  LLVM_DEBUG({ //assert not looping
     DSNode* NH = N;
     svset<DSNode*> seen;
     while(NH && NH->isForwarding()) {
@@ -59,8 +59,7 @@ DSNode *DSNodeHandle::HandleForwarding() const {
     seen.insert(NH);
     NH = NH->ForwardNH.N;
     }
-    }
-    );
+    });
   // Handle node forwarding here!
   DSNode *Next = N->ForwardNH.getNode();  // Cause recursive shrinkage
   Offset += N->ForwardNH.getOffset();
@@ -696,7 +695,7 @@ void DSNode::mergeWith(const DSNodeHandle &NH, unsigned Offset) {
   if (N == this) {
     // We cannot merge two pieces of the same node together, collapse the node
     // completely.
-    DEBUG(errs() << "Attempting to merge two chunks of the same node together!\n");
+    LLVM_DEBUG(errs() << "Attempting to merge two chunks of the same node together!\n");
     foldNodeCompletely();
     return;
   }
@@ -1371,7 +1370,7 @@ void DataStructures::formGlobalECs() {
   svset<const GlobalValue*> ECGlobals;
   buildGlobalECs(ECGlobals);
   if (!ECGlobals.empty()) {
-    DEBUG(errs() << "Eliminating " << ECGlobals.size() << " EC Globals!\n");
+    errs() << "Eliminating " << ECGlobals.size() << " EC Globals!\n";
     for (DSInfoTy::iterator I = DSInfo.begin(),
          E = DSInfo.end(); I != E; ++I)
       eliminateUsesOfECGlobals(*I->second, ECGlobals);
@@ -1415,7 +1414,7 @@ void DataStructures::buildGlobalECs(svset<const GlobalValue*> &ECGlobals) {
     I->addGlobal(First);
   }
 
-  DEBUG(GlobalsGraph->AssertGraphOK());
+  LLVM_DEBUG(GlobalsGraph->AssertGraphOK());
 }
 
 /// EliminateUsesOfECGlobals - Once we have determined that some globals are in
@@ -1466,7 +1465,7 @@ void DataStructures::eliminateUsesOfECGlobals(DSGraph &G,
 #endif
   }
 
-  DEBUG(if(MadeChange) G.AssertGraphOK());
+  LLVM_DEBUG(if(MadeChange) G.AssertGraphOK());
 }
 
 //For Entry Points

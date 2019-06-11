@@ -236,7 +236,7 @@ TypeSafety<dsa>::typeFieldsOverlap (const DSNode * N) {
             }
           }
           if(overlaps) {
-            DEBUG(errs() << " Found overlap at " << offset << " with " << next_offset << "\n");
+            LLVM_DEBUG(errs() << " Found overlap at " << offset << " with " << next_offset << "\n");
             break;
           }
         }

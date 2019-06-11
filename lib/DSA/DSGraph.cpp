@@ -892,7 +892,7 @@ static void removeIdenticalCalls(DSGraph::FunctionListTy &Calls) {
       DSNode *Callee = CS.getCalleeNode();
       if (Callee->getNumReferrers() == 1 && Callee->isCompleteNode() &&
           Callee->isEmptyGlobals()) {  // No useful info?
-        DEBUG(errs() << "WARNING: Useless call site found.\n");
+        LLVM_DEBUG(errs() << "WARNING: Useless call site found.\n");
         I = Calls.erase(I);
         E = Calls.end();
         ++NumDeleted;
@@ -928,7 +928,7 @@ static void removeIdenticalCalls(DSGraph::FunctionListTy &Calls) {
   NumCallNodesMerged += NumDeleted;
 
   if (NumDeleted)
-    DEBUG(errs() << "Merged " << NumDeleted << " call nodes.\n");
+    LLVM_DEBUG(errs() << "Merged " << NumDeleted << " call nodes.\n");
 }
 // removeTriviallyDeadNodes - After the graph has been constructed, this method
 // removes all unreachable nodes that are created because they got merged with
@@ -1073,7 +1073,7 @@ static bool CallSiteUsesAliveArgs(const DSCallSite &CS,
 // This function also clones information about globals back into the globals
 // graph before it deletes the nodes.
 void DSGraph::removeDeadNodes(unsigned Flags) {
-  DEBUG(AssertGraphOK(); if (GlobalsGraph) GlobalsGraph->AssertGraphOK());
+  LLVM_DEBUG(AssertGraphOK(); if (GlobalsGraph) GlobalsGraph->AssertGraphOK());
 
   // Reduce the amount of work we have to do... remove dummy nodes left over by
   // merging...
@@ -1223,7 +1223,7 @@ void DSGraph::removeDeadNodes(unsigned Flags) {
   for (unsigned i = 0, e = DeadNodes.size(); i != e; ++i)
     delete DeadNodes[i];
 
-  DEBUG(AssertGraphOK(); GlobalsGraph->AssertGraphOK());
+  LLVM_DEBUG(AssertGraphOK(); GlobalsGraph->AssertGraphOK());
 }
 
 void DSGraph::AssertNodeContainsGlobal(const DSNode *N, const GlobalValue *GV) const {
@@ -1237,7 +1237,7 @@ void DSGraph::AssertCallSiteInGraph(const DSCallSite &CS) const {
 #if 0
     if (CS.getNumPtrArgs() && CS.getCalleeNode() == CS.getPtrArg(0).getNode() &&
         CS.getCalleeNode() && CS.getCalleeNode()->getGlobals().empty())
-      DEBUG(errs() << "WARNING: WEIRD CALL SITE FOUND!\n");
+      LLVM_DEBUG(errs() << "WARNING: WEIRD CALL SITE FOUND!\n");
 #endif
   }
   AssertNodeInGraph(CS.getRetVal().getNode());
